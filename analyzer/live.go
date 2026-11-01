@@ -96,6 +96,31 @@ func parseDumpsysBattery(serial, out string) LiveReading {
 	return r
 }
 
+// trimCheckinHistory keeps header lines (9,0,i / 9,hsp etc) plus the last
+// keepH history rows (9,h,…). Full history is ~390k lines / 30 MB / 48s
+// parse; trimmed (~50k) parses in <8s and keeps the last ~1-2 days.
+func trimCheckinHistory(s string, keepH int) string {
+	lines := strings.Split(s, "\n")
+	var header []string
+	var hLines []string
+	for _, ln := range lines {
+		if strings.HasPrefix(ln, "9,h,") {
+			hLines = append(hLines, ln)
+		} else {
+			header = append(header, ln)
+		}
+	}
+	if len(hLines) <= keepH {
+		return s
+	}
+	// Ensure we keep a TIME anchor: the first h line is the TIME record.
+	firstH := hLines[0]
+	tail := hLines[len(hLines)-keepH:]
+	kept := append(header, firstH)
+	kept = append(kept, tail...)
+	return strings.Join(kept, "\n")
+}
+
 // LiveBatteryHandler serves GET /api/adb/live?serial=XYZ — one cheap
 // `dumpsys battery` poll, parsed as JSON for the live chart.
 func LiveBatteryHandler(w http.ResponseWriter, r *http.Request) {
@@ -138,7 +163,16 @@ func LiveReportHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	getpropOut, _ := runAdb(r, 8*time.Second, "-s", serial, "shell", "getprop")
-	checkinOut, err := runAdb(r, 25*time.Second, "-s", serial, "shell", "dumpsys", "batterystats", "--checkin")
+	// Use `-c --history` so Battery History timeline is included; bare
+	// `--checkin` / `-c` alone only emits aggregated stats, leaving the
+	// Historian timeline empty (as seen on ZD222SSQG6). Trim to the last
+	// 50k history lines so live polling stays under ~5 MB / ~8s parse.
+	checkinOut, err := runAdb(r, 30*time.Second, "-s", serial, "shell", "dumpsys", "batterystats", "-c", "--history")
+	if err != nil || strings.TrimSpace(checkinOut) == "" {
+		http.Error(w, fmt.Sprintf("live report failed — dumpsys batterystats --checkin empty on %q: %v", serial, err), http.StatusBadGateway)
+		return
+	}
+	checkinOut = trimCheckinHistory(checkinOut, 50000)
 	if err != nil || strings.TrimSpace(checkinOut) == "" {
 		http.Error(w, fmt.Sprintf("live report failed — dumpsys batterystats --checkin empty on %q: %v", serial, err), http.StatusBadGateway)
 		return

@@ -303,7 +303,14 @@ func AdbFallbackHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	getpropOut, _ := runAdb(r, 15*time.Second, "-s", serial, "shell", "getprop")
-	checkinOut, err := runAdb(r, 30*time.Second, "-s", serial, "shell", "dumpsys", "batterystats", "--checkin")
+	// Include history so the fallback produces a real Battery History timeline;
+	// bare `--checkin` omits `9,h,...` rows and leaves Historian empty.
+	checkinOut, err := runAdb(r, 40*time.Second, "-s", serial, "shell", "dumpsys", "batterystats", "-c", "--history")
+	if err != nil || strings.TrimSpace(checkinOut) == "" {
+		http.Error(w, fmt.Sprintf("fallback collection failed — could not run dumpsys batterystats --checkin on %q: %v", serial, err), http.StatusInternalServerError)
+		return
+	}
+	checkinOut = trimCheckinHistory(checkinOut, 60000)
 	if err != nil || strings.TrimSpace(checkinOut) == "" {
 		http.Error(w, fmt.Sprintf("fallback collection failed — could not run dumpsys batterystats --checkin on %q: %v", serial, err), http.StatusInternalServerError)
 		return

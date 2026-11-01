@@ -63,7 +63,7 @@ export function LiveFullPanel({ serial, timeZone }: { serial: string; timeZone: 
         </div>
       </div>
 
-      {!live && !data && <p className="hint" style={{ margin: '8px 0' }}>Streams the same System/App stats + Timeline + Battery chart as a bugreport, but live from `dumpsys batterystats --checkin`. Heavy — polls every 12s.</p>}
+      {!live && !data && <p className="hint" style={{ margin: '8px 0' }}>Streams the same System/App stats + Timeline + Battery chart as a bugreport, but live from `dumpsys batterystats -c --history`. Heavy — polls every 12s.</p>}
       {error && <div className="banner banner-warn" style={{ whiteSpace: 'pre-wrap' }}>{error}</div>}
       {live && !data && !error && <p className="hint">Collecting first live report… (takes ~3–5s)</p>}
 
@@ -73,7 +73,7 @@ export function LiveFullPanel({ serial, timeZone }: { serial: string; timeZone: 
           <AnalysisView data={data} timeZoneOverride={timeZone} />
         </div>
       )}
-      <p className="hint" style={{ marginTop: 6 }}>Live data is `dumpsys batterystats --checkin` polled locally — identical parsing to bugreport upload. Keep the phone awake & unlocked.</p>
+      <p className="hint" style={{ marginTop: 6 }}>Live data is `dumpsys batterystats -c --history` polled locally — identical parsing to bugreport upload. Keep the phone awake & unlocked.</p>
     </section>
   );
 }
