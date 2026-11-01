@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { describeBytes } from '../data/time';
 import type { BatteryStats, AppStat } from '../api/types';
+import { useCollapsible } from './Collapsible';
 
 export interface NetworkSite {
   domain: string;
@@ -47,6 +48,7 @@ export function NetworkAccess({ batteryStats, appStats, sites, historianV2Logs }
   const [q, setQ] = useState('');
   const [qApp, setQApp] = useState('');
   const [limit, setLimit] = useState(50);
+  const [open, setOpen] = useCollapsible('network-access', true);
 
   const netEvents = useMemo(() => {
     let n = 0;
@@ -88,8 +90,12 @@ export function NetworkAccess({ batteryStats, appStats, sites, historianV2Logs }
   const shownSites = filteredSites.slice(0, limit);
 
   return (
-    <section className="card" id="network-access">
-      <h3>Network access <span className="chip">{appNetworkRows.length} apps with traffic</span> <span className="chip">{(sites?.length ?? 0)} domains found</span> <span className="chip">{netEvents} net events</span></h3>
+    <section className="card card-collapsible" id="network-access">
+      <div className="card-head" role="button" tabIndex={0} onClick={() => setOpen(o => !o)} onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setOpen(o => !o); } }} aria-expanded={open} aria-controls="network-access-body">
+        <h3>Network access <span className="chip">{appNetworkRows.length} apps with traffic</span> <span className="chip">{(sites?.length ?? 0)} domains found</span> <span className="chip">{netEvents} net events</span></h3>
+        <span className="collapse-actions"><span className="hint" style={{ fontSize: 11 }}>{open ? 'hide' : 'show'}</span><button className="collapse-toggle" aria-label={open ? 'Collapse' : 'Expand'} onClick={e => { e.stopPropagation(); setOpen(o => !o); }}>{open ? '▾' : '▸'}</button></span>
+      </div>
+      <div id="network-access-body" className="collapsible-body" hidden={!open}>
       <p className="hint">
         Bugreports don't dump Chrome history. Sites below are URLs/hostnames mined from the raw report text (logcat, dumpsys, net logs).
         Use <em>Timeline → filter</em> for <code>Network connectivity</code> / <code>Mobile radio active</code> / Wi-Fi lanes for the time graph.
@@ -167,6 +173,7 @@ export function NetworkAccess({ batteryStats, appStats, sites, historianV2Logs }
         </div>
       )}
       <p className="hint" style={{ marginTop: 8 }}>Tip: click a domain's <em>open ↗</em> to verify. Counts are URL occurrences in the report, not request counts.</p>
+      </div>
     </section>
   );
 }

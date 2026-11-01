@@ -2,6 +2,7 @@ import type { BatteryStatsSystem, CheckinSummary, PowerUseItem } from '../api/ty
 import { formatDuration, formatMah, describeBytes } from '../data/time';
 import { CheckinSummaryTable } from './CheckinSummaryTable';
 import { PowerChart } from './PowerChart';
+import { useCollapsible } from './Collapsible';
 
 /** Enum values of BatteryStats_System_PowerUseItem_Name (pb/batterystats_proto). */
 const POWER_USE_ITEM_NAMES: Record<number, string> = {
@@ -20,11 +21,17 @@ const POWER_USE_ITEM_NAMES: Record<number, string> = {
 };
 
 export function SystemStats({ stats, checkin }: { stats: BatteryStatsSystem | null; checkin?: CheckinSummary | null }) {
+  const [open, setOpen] = useCollapsible('system-stats', true);
   if (!stats) {
     return (
-      <section className="card" id="system-stats">
-        <h3>System stats</h3>
+      <section className="card card-collapsible" id="system-stats">
+        <div className="card-head" role="button" tabIndex={0} onClick={() => setOpen(o => !o)} onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setOpen(o => !o); } }} aria-expanded={open} aria-controls="system-stats-body">
+          <h3>System stats</h3>
+          <span className="collapse-actions"><button className="collapse-toggle" aria-label={open ? 'Collapse' : 'Expand'} onClick={e => { e.stopPropagation(); setOpen(o => !o); }}>{open ? '▾' : '▸'}</button></span>
+        </div>
+        <div id="system-stats-body" className="collapsible-body" hidden={!open}>
         <p className="empty">No aggregated battery stats were parsed for this report. Try a full <code>adb bugreport</code> zip — the checkin section may have been truncated.</p>
+        </div>
       </section>
     );
   }
@@ -34,7 +41,12 @@ export function SystemStats({ stats, checkin }: { stats: BatteryStatsSystem | nu
   const battery = stats.battery;
 
   return (
-    <section className="card" id="system-stats">
+    <section className="card card-collapsible" id="system-stats">
+      <div className="card-head" role="button" tabIndex={0} onClick={() => setOpen(o => !o)} onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setOpen(o => !o); } }} aria-expanded={open} aria-controls="system-stats-body">
+        <h3>System stats {checkin ? <span className="chip">v{checkin.ReportVersion}</span> : null}</h3>
+        <span className="collapse-actions"><span className="hint" style={{ fontSize: 11 }}>{open ? 'hide' : 'show'}</span><button className="collapse-toggle" aria-label={open ? 'Collapse' : 'Expand'} onClick={e => { e.stopPropagation(); setOpen(o => !o); }}>{open ? '▾' : '▸'}</button></span>
+      </div>
+      <div id="system-stats-body" className="collapsible-body" hidden={!open}>
       {checkin && <CheckinSummaryTable cs={checkin} />}
       {battery && (
         <div className="meta-row">
@@ -152,6 +164,7 @@ export function SystemStats({ stats, checkin }: { stats: BatteryStatsSystem | nu
           </table>
         </>
       )}
+      </div>
     </section>
   );
 }

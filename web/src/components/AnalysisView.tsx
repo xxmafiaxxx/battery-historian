@@ -13,6 +13,7 @@ import { Timeline } from './Timeline';
 import { LevelChart } from './LevelChart';
 import { HistorianTabs } from './HistorianTabs';
 import { HistorianToolbar } from './HistorianToolbar';
+import { useCollapsible } from './Collapsible';
 import { formatMah } from '../data/time';
 import { TAB_CONFIGS, getTabExtent, type HistorianTabId } from '../data/historianTabs';
 
@@ -47,6 +48,10 @@ export function AnalysisView({ data }: { data: UploadResponse }) {
 
   const [domainKey, setDomainKey] = useState<string>('Default');
   const [domain, setDomain] = useState<{ min: number; max: number } | null>(null);
+
+  const [historianOpen, setHistorianOpen] = useCollapsible('historian', true);
+  const [levelOpen, setLevelOpen] = useCollapsible('level-summary', true);
+  const [logsOpen, setLogsOpen] = useCollapsible('historian-logs', true);
 
   // Global bounds for Default
   const globalBounds = useMemo(() => {
@@ -120,7 +125,12 @@ export function AnalysisView({ data }: { data: UploadResponse }) {
       </section>
 
       {/* Historian graphic: tabs + toolbar + shared time/battery graph */}
-      <section className="card" id="historian">
+      <section className="card card-collapsible" id="historian">
+        <div className="card-head" role="button" tabIndex={0} onClick={() => setHistorianOpen(o => !o)} onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setHistorianOpen(o => !o); } }} aria-expanded={historianOpen} aria-controls="historian-body">
+          <h3 style={{ margin: 0 }}>Historian <span className="chip">{totalEntries} events</span> <span className="chip">{parsedLogs.length} logs</span></h3>
+          <span className="collapse-actions"><span className="hint" style={{ fontSize: 11 }}>{historianOpen ? 'hide' : 'show'}</span><button className="collapse-toggle" aria-label={historianOpen ? 'Collapse' : 'Expand'} onClick={e => { e.stopPropagation(); setHistorianOpen(o => !o); }}>{historianOpen ? '▾' : '▸'}</button></span>
+        </div>
+        <div id="historian-body" className="collapsible-body" hidden={!historianOpen}>
         <HistorianTabs active={activeTab} onChange={setActiveTab} />
         <p className="hint" style={{ margin: '6px 0 8px' }}>{activeConfig.subtitle}</p>
         <HistorianToolbar
@@ -156,6 +166,7 @@ export function AnalysisView({ data }: { data: UploadResponse }) {
             <div className="banner banner-warn">No timeline events were parsed from this bug report.</div>
           )
         )}
+        </div>
       </section>
 
       <nav className="analysis-jump" aria-label="Sections">
@@ -166,15 +177,21 @@ export function AnalysisView({ data }: { data: UploadResponse }) {
         <a href="#system-stats">System stats {data.checkinSummary ? `· ${data.checkinSummary.ReportVersion ? `v${data.checkinSummary.ReportVersion}` : ''}` : ''}</a>
         <a href="#app-stats">App stats · {appStats.length} apps</a>
         <a href="#historian-logs">Logs · {totalEntries} events</a>
+        <span className="hint" style={{ marginLeft: 'auto', fontSize: 11 }}>Click a panel header to collapse — saved per-panel</span>
       </nav>
 
       <NetworkAccess batteryStats={data.batteryStats ?? null} appStats={appStats} sites={data.networkSites ?? null} historianV2Logs={data.historianV2Logs ?? []} />
 
       <FoundKeys secrets={data.foundSecrets ?? null} />
 
-      <section className="card" id="level-summary">
-        <h3>Battery level summaries</h3>
+      <section className="card card-collapsible" id="level-summary">
+        <div className="card-head" role="button" tabIndex={0} onClick={() => setLevelOpen(o => !o)} onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setLevelOpen(o => !o); } }} aria-expanded={levelOpen} aria-controls="level-summary-body">
+          <h3>Battery level summaries</h3>
+          <span className="collapse-actions"><span className="hint" style={{ fontSize: 11 }}>{levelOpen ? 'hide' : 'show'}</span><button className="collapse-toggle" aria-label={levelOpen ? 'Collapse' : 'Expand'} onClick={e => { e.stopPropagation(); setLevelOpen(o => !o); }}>{levelOpen ? '▾' : '▸'}</button></span>
+        </div>
+        <div id="level-summary-body" className="collapsible-body" hidden={!levelOpen}>
         <LevelSummaryTable summary={parseLevelSummary(levelCsv)} />
+        </div>
       </section>
 
       <div id="system-stats">
@@ -185,10 +202,14 @@ export function AnalysisView({ data }: { data: UploadResponse }) {
         <AppStats appStats={appStats} />
       </div>
 
-      <section className="card" id="historian-logs">
-        <h3>
-          Historian logs <span className="chip">{totalEntries} entries</span>
-        </h3>
+      <section className="card card-collapsible" id="historian-logs">
+        <div className="card-head" role="button" tabIndex={0} onClick={() => setLogsOpen(o => !o)} onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setLogsOpen(o => !o); } }} aria-expanded={logsOpen} aria-controls="historian-logs-body">
+          <h3>
+            Historian logs <span className="chip">{totalEntries} entries</span>
+          </h3>
+          <span className="collapse-actions"><span className="hint" style={{ fontSize: 11 }}>{logsOpen ? 'hide' : 'show'}</span><button className="collapse-toggle" aria-label={logsOpen ? 'Collapse' : 'Expand'} onClick={e => { e.stopPropagation(); setLogsOpen(o => !o); }}>{logsOpen ? '▾' : '▸'}</button></span>
+        </div>
+        <div id="historian-logs-body" className="collapsible-body" hidden={!logsOpen}>
         <ul className="logs-list">
           {parsedLogs.map(l => (
             <li key={l.source}>
@@ -205,6 +226,7 @@ export function AnalysisView({ data }: { data: UploadResponse }) {
           ))}
           {parsedLogs.length === 0 && <li>No historian logs were generated.</li>}
         </ul>
+        </div>
       </section>
     </div>
   );

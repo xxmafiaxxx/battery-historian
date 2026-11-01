@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import type { AppStat } from '../api/types';
 import { formatDuration, formatMah, describeBytes } from '../data/time';
+import { useCollapsible } from './Collapsible';
 
 type SortKey = 'power' | 'cpu' | 'name' | 'uid';
 
@@ -30,6 +31,7 @@ function pkgShort(n: string) {
 }
 
 export function AppStats({ appStats }: { appStats: AppStat[] }) {
+  const [open, setOpen] = useCollapsible('app-stats', true);
   const [selected, setSelected] = useState<string | null>(null);
   const [q, setQ] = useState('');
   const [sort, setSort] = useState<{ key: SortKey; dir: 'asc' | 'desc' }>({ key: 'power', dir: 'desc' });
@@ -73,8 +75,12 @@ export function AppStats({ appStats }: { appStats: AppStat[] }) {
   );
 
   return (
-    <section className="card" id="app-stats">
-      <h3>App stats <span className="chip">{appStats.length} apps</span> <span className="chip" style={{ background: 'rgba(74,222,128,0.12)' }}>{rows.length} shown</span></h3>
+    <section className="card card-collapsible" id="app-stats">
+      <div className="card-head" role="button" tabIndex={0} onClick={() => setOpen(o => !o)} onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setOpen(o => !o); } }} aria-expanded={open} aria-controls="app-stats-body">
+        <h3>App stats <span className="chip">{appStats.length} apps</span> <span className="chip" style={{ background: 'rgba(74,222,128,0.12)' }}>{rows.length} shown</span></h3>
+        <span className="collapse-actions"><span className="hint" style={{ fontSize: 11 }}>{open ? 'hide' : 'show'}</span><button className="collapse-toggle" aria-label={open ? 'Collapse' : 'Expand'} onClick={e => { e.stopPropagation(); setOpen(o => !o); }}>{open ? '▾' : '▸'}</button></span>
+      </div>
+      <div id="app-stats-body" className="collapsible-body" hidden={!open}>
       {appStats.length === 0 ? (
         <p className="empty">No per-app stats were parsed. Upload a full <code>adb bugreport</code> zip — the checkin section may be truncated or missing package/appops dumps.</p>
       ) : (
@@ -132,6 +138,7 @@ export function AppStats({ appStats }: { appStats: AppStat[] }) {
           {sel && <AppDetail stat={sel.stat} name={sel.name} onClose={() => setSelected(null)} />}
         </>
       )}
+      </div>
     </section>
   );
 }

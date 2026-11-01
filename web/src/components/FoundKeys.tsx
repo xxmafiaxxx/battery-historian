@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { useCollapsible } from './Collapsible';
 
 export interface SecretFind {
   kind: string;
@@ -19,6 +20,7 @@ export function FoundKeys({ secrets }: { secrets: SecretFind[] | null | undefine
   const [q, setQ] = useState('');
   const [sevFilter, setSevFilter] = useState<string>('all');
   const [limit, setLimit] = useState(40);
+  const [open, setOpen] = useCollapsible('found-keys', true);
 
   const filtered = useMemo(() => {
     let out = list;
@@ -34,11 +36,15 @@ export function FoundKeys({ secrets }: { secrets: SecretFind[] | null | undefine
   const highCount = list.filter(s => s.severity === 'high').length;
 
   return (
-    <section className="card" id="found-keys">
-      <h3>
-        Found keys / secrets <span className="chip">{list.length} findings</span>
-        {highCount > 0 && <span className="chip" style={{ background: 'rgba(239,68,68,0.15)', color: '#fecaca', borderColor: 'rgba(239,68,68,0.3)' }}>{highCount} high</span>}
-      </h3>
+    <section className="card card-collapsible" id="found-keys">
+      <div className="card-head" role="button" tabIndex={0} onClick={() => setOpen(o => !o)} onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setOpen(o => !o); } }} aria-expanded={open} aria-controls="found-keys-body">
+        <h3>
+          Found keys / secrets <span className="chip">{list.length} findings</span>
+          {highCount > 0 && <span className="chip" style={{ background: 'rgba(239,68,68,0.15)', color: '#fecaca', borderColor: 'rgba(239,68,68,0.3)' }}>{highCount} high</span>}
+        </h3>
+        <span className="collapse-actions"><span className="hint" style={{ fontSize: 11 }}>{open ? 'hide' : 'show'}</span><button className="collapse-toggle" aria-label={open ? 'Collapse' : 'Expand'} onClick={e => { e.stopPropagation(); setOpen(o => !o); }}>{open ? '▾' : '▸'}</button></span>
+      </div>
+      <div id="found-keys-body" className="collapsible-body" hidden={!open}>
       <p className="hint">
         Defensive scan of the raw report text. Values are <strong>masked</strong> by default — never share a raw bugreport that contains live keys.
         Only analyze reports from devices you own or have explicit permission to inspect. If you find real keys, rotate them and strip the report before sharing.
@@ -89,6 +95,7 @@ export function FoundKeys({ secrets }: { secrets: SecretFind[] | null | undefine
         </div>
       )}
       <p className="hint" style={{ marginTop: 8 }}>Patterns: <code>AKIA[0-9A-Z]&#123;16&#125;</code> · <code>AIza[0-9A-Za-z-_&#123;35&#125;]</code> · JWT · <code>-----BEGIN * PRIVATE KEY-----</code> · generic <code>(api_key|secret|password|token)=value</code>. Masked as <code>abc•••yz</code>. Rotate any real hit immediately.</p>
+      </div>
     </section>
   );
 }
