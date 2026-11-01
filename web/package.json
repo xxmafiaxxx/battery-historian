@@ -3,7 +3,7 @@
   "private": true,
   "version": "3.1.0",
   "type": "module",
-  "description": "Modern React UI for Battery Historian: uploads Android bug reports and visualizes battery analysis results served by the Go backend.",
+  "description": "Battery Historian — Slimy Edition: Modern React UI that uploads Android bug reports and visualizes battery analysis results served by the Go backend.",
   "scripts": {
     "dev": "vite",
     "build": "tsc -p tsconfig.json && vite build",

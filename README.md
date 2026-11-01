@@ -1,4 +1,4 @@
-# Battery Historian (modernized)
+# Battery Historian — Slimy Edition
 
 Battery Historian is a tool to inspect battery-related information and events
 on an Android device running Android 5.0 Lollipop (API level 21) and later,

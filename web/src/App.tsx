@@ -79,7 +79,7 @@ export default function App() {
             <span className={`bolt${busy ? ' bolt-busy' : ''}`} aria-hidden>
               ⚡
             </span>{' '}
-            Battery Historian
+            Battery Historian <span style={{ color: '#4ade80', fontWeight: 800, fontStyle: 'italic', textShadow: '0 0 12px rgba(74,222,128,0.5)' }}>Slimy Edition</span>
           </h1>
           <button
             type="button"
@@ -112,7 +112,7 @@ export default function App() {
         </>
       )}
       <footer className="app-footer">
-        Modernized Battery Historian · Go backend + React frontend · <a href="/legacy/">legacy UI</a>
+        Battery Historian — Slimy Edition · Go backend + React frontend · <a href="/legacy/">legacy UI</a>
       </footer>
     </div>
   );
