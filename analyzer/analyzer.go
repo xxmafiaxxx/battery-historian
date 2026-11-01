@@ -34,6 +34,7 @@ import (
 	"google.golang.org/protobuf/proto"
 
 	"github.com/google/battery-historian/activity"
+	"github.com/google/battery-historian/aggregated"
 	"github.com/google/battery-historian/broadcasts"
 	"github.com/google/battery-historian/bugreportutils"
 	"github.com/google/battery-historian/checkindelta"
@@ -121,6 +122,7 @@ type uploadResponse struct {
 	BatteryStats        *bspb.BatteryStats       `json:"batteryStats"`
 	DeviceCapacity      float32                  `json:"deviceCapacity"`
 	HistogramStats      presenter.HistogramStats `json:"histogramStats"`
+	CheckinSummary      *aggregated.Checkin      `json:"checkinSummary"`
 	TimeToDelta         map[string]string        `json:"timeToDelta"`
 	CriticalError       string                   `json:"criticalError"` // Critical errors are ones that cause parsing of important data to abort early and should be shown prominently to the user.
 	Note                string                   `json:"note"`          // A message to show to the user that they should be aware of.
@@ -922,6 +924,7 @@ func (pd *ParsedData) parseBugReport(fnameA, contentsA, fnameB, contentsB string
 			BatteryStats:    bsStats,
 			DeviceCapacity:  bsStats.GetSystem().GetPowerUseSummary().GetBatteryCapacityMah(),
 			HistogramStats:  extractHistogramStats(data),
+			CheckinSummary:  &data.CheckinSummary,
 			TimeToDelta:     summariesOutput.timeToDelta,
 			CriticalError:   ce,
 			Note:            note,

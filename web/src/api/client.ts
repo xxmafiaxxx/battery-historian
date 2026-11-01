@@ -1,4 +1,36 @@
-import type { UploadResponse, UploadResponseCompare } from './types';
+import type { AdbDevice, UploadResponse, UploadResponseCompare } from './types';
+
+/** Lists Android devices visible to adb (GET /api/adb/devices). */
+export async function listAdbDevices(): Promise<AdbDevice[]> {
+  const res = await fetch('/api/adb/devices');
+  if (!res.ok) {
+    throw new Error(await res.text());
+  }
+  const body = (await res.json()) as { devices?: AdbDevice[] };
+  return body.devices ?? [];
+}
+
+/**
+ * Runs `adb bugreport` on the given device server-side and analyzes the
+ * result (POST /api/adb/bugreport). Takes a minute or two on real devices.
+ */
+export async function pullBugreport(serial: string): Promise<{ single: UploadResponse } | { compare: UploadResponseCompare }> {
+  const res = await fetch(`/api/adb/bugreport?serial=${encodeURIComponent(serial)}`, { method: 'POST' });
+  if (!res.ok) {
+    throw new Error(await res.text());
+  }
+  const body: unknown = await res.json();
+  if (isCompare(body)) {
+    if (body.UploadResponse.length === 1) {
+      const single = body.UploadResponse[0];
+      if (single) {
+        return { single };
+      }
+    }
+    return { compare: body };
+  }
+  return { single: body as UploadResponse };
+}
 
 /**
  * Submits files to the analysis endpoint (POST "/" on the Go server) and

@@ -22,24 +22,70 @@ export interface ParsedLog {
  */
 
 const LEVEL_SERIES = Metric.BATTERY_LEVEL;
-/** Series shown first (top lanes); the rest are toggled off by default. */
-const ALWAYS_ON_SERIES = new Set([
-  LEVEL_SERIES,
-  Metric.CHARGING_STATUS,
+
+/**
+ * Legacy-timeline lane order (top to bottom). Series not listed here are
+ * appended, sorted by event count. The legacy UI also showed a few derived
+ * groups (Kernel only uptime, Userspace wakelocks, Long Wakelocks) computed
+ * from raw metrics; those are not raw CSV series, so unknown names no-op.
+ */
+const SERIES_ORDER = [
   'CPU running',
-  'Screen',
+  'App Processor wakeup',
+  'Kernel only uptime',
+  'Userspace wakelocks',
   'Wakelock In',
   'Wakelock Out',
+  'Long Wakelocks',
+  'Screen',
+  'Top app',
   'Top Application',
-  'Phone state',
-  'Mobile radio',
-  'Wi-Fi radio',
+  'Active process',
+  'Crashes (logcat)',
+  'AM Low Memory / ANR',
+  'Doze',
+  'JobScheduler Job',
+  'Sync App',
+  'SyncManager',
+  'GPS',
   'GPS is on',
-]);
+  'BLE scanning',
+  'Phone scanning',
+  'Phone state',
+  'Network connectivity',
+  'Mobile radio active',
+  'Mobile signal strength',
+  'Mobile network type',
+  'Wifi full lock',
+  'Wifi scan',
+  'Wifi supplicant',
+  'Wifi radio',
+  'Wifi signal strength',
+  'Wifi running',
+  'Wifi on',
+  'Audio',
+  'Video',
+  'Camera',
+  'Flashlight on',
+  'Sensor',
+  'Battery Saver',
+  'Plug',
+  'Charging status',
+  'Foreground process',
+  'Coulomb charge',
+  'Brightness',
+  'Voltage',
+  'Temperature',
+];
+
+/** Series whose lanes are on by default (everything in this set). */
+const ALWAYS_ON_SERIES = new Set(SERIES_ORDER);
 
 const LANE_HEIGHT = 18;
 const LANE_GAP = 6;
-const MARGIN = { top: 24, right: 16, bottom: 28, left: 130 };
+const MARGIN = { top: 24, right: 16, bottom: 28, left: 150 };
+/** Hard cap on rendered lanes; everything else stays available in the menu. */
+const MAX_LANES = 44;
 
 interface SeriesLane {
   name: string;
@@ -77,10 +123,14 @@ export function Timeline({ logs, timeZone }: { logs: ParsedLog[]; timeZone: stri
   // Build lanes once per parsed log set.
   useEffect(() => {
     const groups = groupBySeries(allEntries);
+    const orderIdx = (name: string): number => {
+      const i = SERIES_ORDER.indexOf(name);
+      return i === -1 ? SERIES_ORDER.length : i;
+    };
     const sorted = [...groups.entries()]
       .filter(([name]) => name !== LEVEL_SERIES)
-      .sort((a, b) => b[1].length - a[1].length)
-      .map(([name, entries]): SeriesLane => ({ name, entries, on: ALWAYS_ON_SERIES.has(name) || entries.length <= 500 }));
+      .sort((a, b) => orderIdx(a[0]) - orderIdx(b[0]) || b[1].length - a[1].length)
+      .map(([name, entries]): SeriesLane => ({ name, entries, on: ALWAYS_ON_SERIES.has(name) }));
     setLanes(sorted);
     setDomain(bounds);
   }, [allEntries, bounds]);
@@ -93,7 +143,7 @@ export function Timeline({ logs, timeZone }: { logs: ParsedLog[]; timeZone: stri
   const visibleLanes = useMemo(() => {
     const on = lanes.filter(l => l.on);
     // Keep the lane count sane; the off-by-default tail is available in the menu.
-    return on.slice(0, 24);
+    return on.slice(0, MAX_LANES);
   }, [lanes]);
 
   // Canvas draw effect.

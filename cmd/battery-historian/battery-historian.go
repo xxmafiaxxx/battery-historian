@@ -33,6 +33,7 @@ var (
 	port      = flag.Int("port", 9999, "service port")
 
 	compiledDir   = flag.String("compiled_dir", "./compiled", "Directory containing compiled js file for Historian v2 (legacy UI).")
+	adbPath       = flag.String("adb_path", "adb", "Path to the adb binary used by the pull-from-device feature.")
 	distDir       = flag.String("dist_dir", "./web/dist", "Directory containing the built React UI (web/dist).")
 	jsDir         = flag.String("js_dir", "./js", "Directory containing uncompiled js files for Historian v2.")
 	scriptsDir    = flag.String("scripts_dir", "./scripts", "Directory containing Historian and kernel trace Python scripts.")
@@ -135,6 +136,15 @@ type rootServer struct {
 }
 
 func (s *rootServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	// Direct-from-device endpoints (see analyzer/adb.go).
+	if r.URL.Path == "/api/adb/devices" && r.Method == "GET" {
+		analyzer.AdbDevicesHandler(w, r)
+		return
+	}
+	if r.URL.Path == "/api/adb/bugreport" && r.Method == "POST" {
+		analyzer.AdbBugreportHandler(w, r)
+		return
+	}
 	switch r.Method {
 	case "POST":
 		r.ParseForm()
@@ -172,6 +182,7 @@ func main() {
 	analyzer.SetScriptsDir(*scriptsDir)
 	analyzer.SetResVersion(*resVersion)
 	analyzer.SetIsOptimized(*optimized)
+	analyzer.SetAdbPath(*adbPath)
 	log.Println("Listening on port: ", *port)
 	srv := &http.Server{
 		Addr:              fmt.Sprintf(":%d", *port),

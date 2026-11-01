@@ -18,6 +18,7 @@ package historianutils
 import (
 	"bytes"
 	"compress/gzip"
+	"context"
 	"errors"
 	"fmt"
 	"os/exec"
@@ -43,13 +44,16 @@ var (
 
 // ScrubPII scrubs any part of the string that looks like PII (eg. an email address).
 // From:
-//     com.google.android.apps.plus.content.EsProvider/com.google/john.doe@gmail.com/extra
-//     or
-//     *sync*/com.app.android.conversations/com.app.android.account/Mr. Noogler
+//
+//	com.google.android.apps.plus.content.EsProvider/com.google/john.doe@gmail.com/extra
+//	or
+//	*sync*/com.app.android.conversations/com.app.android.account/Mr. Noogler
+//
 // To:
-//     com.google.android.apps.plus.content.EsProvider/com.google/XXX@gmail.com/extra
-//     or
-//     *sync*/com.app.android.conversations/com.app.android.account/XXX
+//
+//	com.google.android.apps.plus.content.EsProvider/com.google/XXX@gmail.com/extra
+//	or
+//	*sync*/com.app.android.conversations/com.app.android.account/XXX
 func ScrubPII(input string) string {
 	if matches, result := SubexpNames(piiEmailRE, input); matches {
 		return fmt.Sprintf("%sXXX@%s", result["prefix"], result["suffix"])
@@ -139,7 +143,13 @@ func ParseDurationWithDays(input string) (int64, error) {
 
 // RunCommand executes the given command and returns the output.
 func RunCommand(name string, args ...string) (string, error) {
-	cmd := exec.Command(name, args...)
+	return RunCommandContext(context.Background(), name, args...)
+}
+
+// RunCommandContext executes the given command with a context (for timeouts
+// and cancellation) and returns the output.
+func RunCommandContext(ctx context.Context, name string, args ...string) (string, error) {
+	cmd := exec.CommandContext(ctx, name, args...)
 	// Stdout pipe for reading the generated output.
 	var stdout, stderr bytes.Buffer
 	cmd.Stdout = &stdout

@@ -8,7 +8,11 @@ export default defineConfig({
   server: {
     port: 5173,
     proxy: {
-      // The analysis endpoint (multipart POST -> JSON response).
+      // Direct-from-device endpoints + analysis (multipart POST -> JSON).
+      '/api': {
+        target: 'http://127.0.0.1:9999',
+        changeOrigin: true,
+      },
       '/': {
         target: 'http://127.0.0.1:9999',
         changeOrigin: true,

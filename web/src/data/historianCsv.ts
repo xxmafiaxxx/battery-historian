@@ -26,7 +26,7 @@ export interface LogParseResult {
 
 /** Metric names emitted by the Go csv writer that the UI treats specially. */
 export const Metric = {
-  BATTERY_LEVEL: 'Level',
+  BATTERY_LEVEL: 'Battery Level',
   TEMPERATURE: 'Temperature',
   CHARGING_STATUS: 'Charging status',
   POWER_MONITOR: 'Power Monitor',

@@ -53,7 +53,7 @@ export function AnalysisView({ data }: { data: UploadResponse }) {
         <LevelSummaryTable summary={parseLevelSummary(data.levelSummaryCsv)} />
       </section>
 
-      <SystemStats stats={data.batteryStats?.system ?? null} />
+      <SystemStats stats={data.batteryStats?.system ?? null} checkin={data.checkinSummary} />
 
       <AppStats appStats={data.appStats} />
 

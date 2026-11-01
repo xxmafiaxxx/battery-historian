@@ -46,10 +46,10 @@ func TestScrubPII(t *testing.T) {
 
 func TestServiceDumpRE(t *testing.T) {
 	tests := []struct {
-		desc       string
-		line       string
-		wantMatch  bool
-		wantSvc    string
+		desc      string
+		line      string
+		wantMatch bool
+		wantSvc   string
 	}{
 		{
 			desc:      "Old style line (pre-Android 7)",
@@ -110,7 +110,8 @@ func TestServiceDumpRE(t *testing.T) {
 	}
 }
 
-func TestParseDurationWithDays(t *testing.T) {	tests := []struct {
+func TestParseDurationWithDays(t *testing.T) {
+	tests := []struct {
 		unparsedDur string
 		wantMs      int64
 		wantErr     bool

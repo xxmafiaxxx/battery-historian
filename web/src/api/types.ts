@@ -189,7 +189,8 @@ export interface BatteryStatsApp {
     wakeups?: number;
     service?: { name?: string; wakeups?: number }[];
   } | null;
-  process?: { name?: string; user_time_msec?: number; system_time_msec?: number; start_time?: string }[];
+  process?: { name?: string; user_time_msec?: number; system_time_msec?: number; foreground_time_msec?: number; starts?: number; anrs?: number; crashes?: number }[];
+  modem_controller?: ControllerActivity | null;
   wakelock?: {
     name?: string;
     full_time_msec?: number;
@@ -242,6 +243,140 @@ export interface AppNetwork {
   wifi_packets_bg_tx?: number;
 }
 
+/** analyzer.AdbDevice */
+export interface AdbDevice {
+  serial: string;
+  state: string;
+  model?: string;
+}
+
+/**
+ * aggregated.Checkin (untagged Go struct: PascalCase keys; time.Duration
+ * marshals as integer nanoseconds). Rendered as the Aggregated Checkin Stats
+ * table, matching the legacy System Stats tab.
+ */
+export interface CheckinSummary {
+  Device: string;
+  Build: string;
+  BuildFingerprint: string;
+  ReportVersion: number;
+  ScreenOffDischargePoints: number;
+  ScreenOnDischargePoints: number;
+  ActualDischarge: number;
+  EstimatedDischarge: number;
+  WifiDischargePoints: number;
+  BluetoothDischargePoints: number;
+  ModemDischargePoints: number;
+  Realtime: number;
+  ScreenOffRealtime: number;
+  Uptime: MDuration;
+  ScreenOffUptime: MDuration;
+  ScreenOffUptimePercentage: number;
+  ScreenOnTime: MDuration;
+  ScreenOnTimePercentage: number;
+  PartialWakelockTime: MDuration;
+  PartialWakelockTimePercentage: number;
+  KernelOverheadTime: MDuration;
+  KernelOverheadTimePercentage: number;
+  SignalScanningTime: MDuration;
+  SignalScanningTimePercentage: number;
+  MobileActiveTime: MDuration;
+  MobileActiveTimePercentage: number;
+  WifiOnTime: MDuration;
+  WifiOnTimePercentage: number;
+  WifiIdleTime: MDuration;
+  WifiTransferTime: MDuration;
+  WifiTransferTimePercentage: number;
+  BluetoothIdleTime: MDuration;
+  BluetoothTransferTime: MDuration;
+  BluetoothTransferTimePercentage: number;
+  ModemIdleTime: MDuration;
+  ModemTransferTime: MDuration;
+  ModemTransferTimePercentage: number;
+  PhoneCallTime: MDuration;
+  PhoneCallTimePercentage: number;
+  DeviceIdlingTime: MDuration;
+  DeviceIdlingTimePercentage: number;
+  FullWakelockTime: MDuration;
+  FullWakelockTimePercentage: number;
+  InteractiveTime: MDuration;
+  InteractiveTimePercentage: number;
+  DeviceIdleModeEnabledTime: MDuration;
+  DeviceIdleModeEnabledTimePercentage: number;
+  ScreenOffDischargeRatePerHr: MFloat32;
+  ScreenOnDischargeRatePerHr: MFloat32;
+  MobileKiloBytesPerHr: MFloat32;
+  WifiKiloBytesPerHr: MFloat32;
+  WifiDischargeRatePerHr: MFloat32;
+  BluetoothDischargeRatePerHr: MFloat32;
+  ModemDischargeRatePerHr: MFloat32;
+  AggCameraUse: CheckinActivityData;
+  AggFlashlightUse: CheckinActivityData;
+  AggGPSUse: CheckinActivityData;
+  AggKernelWakelocks: CheckinActivityData;
+  AggScheduledJobs: CheckinActivityData;
+  AggSyncTasks: CheckinActivityData;
+  AggWakeupReasons: CheckinActivityData;
+  AggWifiScanActivity: CheckinActivityData;
+  AggWifiFullLockActivity: CheckinActivityData;
+  AggAppWakeups: CheckinRateData;
+  AggCPUUsage: CheckinCPUData;
+  UserspaceWakelocks: CheckinActivityData[];
+  KernelWakelocks: CheckinActivityData[];
+  ScheduledJobs: CheckinActivityData[];
+  SyncTasks: CheckinActivityData[];
+  WakeupReasons: CheckinActivityData[];
+  GPSUse: CheckinActivityData[];
+}
+
+/** aggregated.MDuration — V is nanoseconds. */
+export interface MDuration {
+  V: number;
+  L: string;
+}
+
+/** aggregated.MFloat32 */
+export interface MFloat32 {
+  V: number;
+  L: string;
+}
+
+/** aggregated.ActivityData (checkin summary) — durations are nanoseconds. */
+export interface CheckinActivityData {
+  Name: string;
+  Title: string;
+  UID: number;
+  Count: number;
+  CountPerHour: number;
+  CountLevel: string;
+  MaxDuration: number;
+  Duration: number;
+  TotalDuration: number;
+  SecondsPerHr: number;
+  DurationLevel: string;
+  Level: string;
+}
+
+/** aggregated.RateData (checkin summary) */
+export interface CheckinRateData {
+  Name: string;
+  UID: number;
+  Count: number;
+  CountPerHr: number;
+  CountLevel: string;
+}
+
+/** aggregated.CPUData — durations are nanoseconds. */
+export interface CheckinCPUData {
+  Name: string;
+  UID: number;
+  UserTime: number;
+  SystemTime: number;
+  PowerPct: number;
+  UserTimeLevel: string;
+  SystemTimeLevel: string;
+}
+
 /** analyzer.uploadResponse */
 export interface UploadResponse {
   sdkVersion: number;
@@ -253,6 +388,7 @@ export interface UploadResponse {
   batteryStats: BatteryStats | null;
   deviceCapacity: number;
   histogramStats: unknown;
+  checkinSummary?: CheckinSummary | null;
   timeToDelta: Record<string, string>;
   criticalError: string;
   note: string;
@@ -274,9 +410,9 @@ export interface ActivityDataDiff {
   Name?: string;
   Uid?: number;
   UniqueName?: string;
-  Left?: ActivityData;
-  Right?: ActivityData;
-  Delta?: ActivityData;
+  Left?: CheckinActivityData;
+  Right?: CheckinActivityData;
+  Delta?: CheckinActivityData;
 }
 
 export interface ActivityData {

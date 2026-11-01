@@ -1,5 +1,6 @@
-import type { BatteryStatsSystem, PowerUseItem } from '../api/types';
+import type { BatteryStatsSystem, CheckinSummary, PowerUseItem } from '../api/types';
 import { formatDuration, formatMah, describeBytes } from '../data/time';
+import { CheckinSummaryTable } from './CheckinSummaryTable';
 
 /** Enum values of BatteryStats_System_PowerUseItem_Name (pb/batterystats_proto). */
 const POWER_USE_ITEM_NAMES: Record<number, string> = {
@@ -17,7 +18,7 @@ const POWER_USE_ITEM_NAMES: Record<number, string> = {
   11: 'flashlight',
 };
 
-export function SystemStats({ stats }: { stats: BatteryStatsSystem | null }) {
+export function SystemStats({ stats, checkin }: { stats: BatteryStatsSystem | null; checkin?: CheckinSummary | null }) {
   if (!stats) {
     return (
       <section className="card">
@@ -34,6 +35,7 @@ export function SystemStats({ stats }: { stats: BatteryStatsSystem | null }) {
   return (
     <section className="card">
       <h3>System stats</h3>
+      {checkin && <CheckinSummaryTable cs={checkin} />}
       {battery && (
         <div className="meta-row">
           {battery.estimated_battery_capacity_mah ? <span className="chip">est. capacity {battery.estimated_battery_capacity_mah} mAh</span> : null}

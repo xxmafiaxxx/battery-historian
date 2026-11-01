@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { analyze } from './api/client';
+import { analyze, pullBugreport } from './api/client';
 import type { UploadResponse, UploadResponseCompare } from './api/types';
 import { UploadView } from './components/UploadView';
 import { AnalysisView } from './components/AnalysisView';
@@ -12,17 +12,26 @@ export default function App() {
   const [error, setError] = useState('');
   const [result, setResult] = useState<Result | null>(null);
 
+  const finish = (r: Result) => {
+    setResult(r);
+    window.scrollTo(0, 0);
+  };
+
   const onSubmit = async (input: Parameters<typeof analyze>[0]) => {
     setBusy(true);
     setError('');
     try {
-      setResult(await analyze(input));
-      window.scrollTo(0, 0);
+      finish(await analyze(input));
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
     } finally {
       setBusy(false);
     }
+  };
+
+  const onPull = async (serial: string) => {
+    setError('');
+    finish(await pullBugreport(serial));
   };
 
   const reset = () => {
@@ -42,7 +51,7 @@ export default function App() {
         <p className="subtitle">Inspect battery-related events from Android bug reports (Android 5.0+, checkin format v11&ndash;36+).</p>
       </header>
       {result === null ? (
-        <UploadView onSubmit={onSubmit} busy={busy} error={error} />
+        <UploadView onSubmit={onSubmit} onPull={onPull} busy={busy} error={error} />
       ) : (
         <>
           <div className="toolbar">

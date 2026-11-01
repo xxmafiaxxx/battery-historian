@@ -92,6 +92,16 @@ function AppDetail({ stat, name }: { stat: AppStat; name: string }) {
         <DetailBlock title="Wi-Fi data">
           {net ? `↓ ${describeBytes(net.wifi_bytes_rx ?? 0)} / ↑ ${describeBytes(net.wifi_bytes_tx ?? 0)}` : '—'}
         </DetailBlock>
+        <DetailBlock title="Mobile radio active">
+          {net && (net.mobile_active_time_msec ?? 0) > 0
+            ? `${formatDuration(net.mobile_active_time_msec ?? 0)} × ${net.mobile_active_count ?? 0}`
+            : '—'}
+        </DetailBlock>
+        <DetailBlock title="Modem activity">
+          {raw?.modem_controller
+            ? `idle ${formatDuration(raw.modem_controller.modem_idle_time_msec ?? 0)} · rx ${formatDuration(raw.modem_controller.modem_rx_time_msec ?? 0)} · tx ${formatDuration(raw.modem_controller.modem_tx_time_msec ?? 0)}`
+            : '—'}
+        </DetailBlock>
       </div>
 
       {(raw?.wakelock?.length ?? 0) > 0 && (
@@ -113,6 +123,56 @@ function AppDetail({ stat, name }: { stat: AppStat; name: string }) {
                   <td>{formatDuration(w.partial_time_msec ?? 0)}</td>
                   <td>{w.partial_count ?? 0}</td>
                   <td>{formatDuration(w.background_time_msec ?? 0)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </>
+      )}
+
+      {(raw?.sensor?.length ?? 0) > 0 && (
+        <>
+          <h5>Sensor use</h5>
+          <table className="data-table">
+            <thead>
+              <tr>
+                <th>Sensor #</th>
+                <th>Time</th>
+                <th>Count</th>
+              </tr>
+            </thead>
+            <tbody>
+              {raw?.sensor?.map((sn, i) => (
+                <tr key={i}>
+                  <td>{sn.number}</td>
+                  <td>{formatDuration(sn.total_time_msec ?? 0)}</td>
+                  <td>{sn.count ?? 0}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </>
+      )}
+
+      {(raw?.process?.length ?? 0) > 0 && (
+        <>
+          <h5>Process info</h5>
+          <table className="data-table">
+            <thead>
+              <tr>
+                <th>Process</th>
+                <th>User time</th>
+                <th>System time</th>
+                <th>Starts</th>
+              </tr>
+            </thead>
+            <tbody>
+              {raw?.process?.map((pr, i) => (
+                <tr key={i}>
+                  <td>{pr.name}</td>
+                  <td>{formatDuration(pr.user_time_msec ?? 0)}</td>
+                  <td>{formatDuration(pr.system_time_msec ?? 0)}</td>
+                  <td>{pr.starts ?? '—'}</td>
                 </tr>
               ))}
             </tbody>
