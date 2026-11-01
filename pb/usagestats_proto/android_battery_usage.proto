@@ -19,7 +19,9 @@ syntax = "proto2";
 
 package usagestats;
 
-import "github.com/google/battery-historian/pb/usagestats_proto/android_package_info.proto";
+option go_package = "github.com/google/battery-historian/pb/usagestats_proto";
+
+import "pb/usagestats_proto/android_package_info.proto";
 
 message SystemInfo {
 

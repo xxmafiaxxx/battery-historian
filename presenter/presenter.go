@@ -25,13 +25,13 @@ import (
 	"strings"
 	"time"
 
-	"github.com/golang/protobuf/proto"
 	"github.com/google/battery-historian/aggregated"
 	"github.com/google/battery-historian/bugreportutils"
 	"github.com/google/battery-historian/historianutils"
 	"github.com/google/battery-historian/parseutils"
 	bspb "github.com/google/battery-historian/pb/batterystats_proto"
 	"github.com/google/battery-historian/wakeupreason"
+	"google.golang.org/protobuf/proto"
 )
 
 func abs(x float32) float32 {

@@ -55,7 +55,7 @@ func (d *deltaMapping) addMapping(timestamp, delta int64) error {
 // e.g. +1d01h33m33s000ms
 func formatDelta(delta int64) (string, error) {
 	if delta < 0 {
-		return "", fmt.Errorf("negative delta %q not allowed", delta)
+		return "", fmt.Errorf("negative delta %d not allowed", delta)
 	}
 	if delta == 0 {
 		// Special case, no units.

@@ -21,6 +21,7 @@ import (
 	"log"
 	"net/http"
 	"path"
+	"time"
 
 	"github.com/google/battery-historian/analyzer"
 )
@@ -121,5 +122,14 @@ func main() {
 	analyzer.SetResVersion(*resVersion)
 	analyzer.SetIsOptimized(*optimized)
 	log.Println("Listening on port: ", *port)
-	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", *port), nil))
+	srv := &http.Server{
+		Addr:              fmt.Sprintf(":%d", *port),
+		ReadHeaderTimeout: 30 * time.Second,
+		// Writes can take a while: uploads are large bug reports and analysis runs
+		// several parsers, so the write timeout is generous.
+		WriteTimeout: 10 * time.Minute,
+		ReadTimeout:  10 * time.Minute,
+		IdleTimeout:  5 * time.Minute,
+	}
+	log.Fatal(srv.ListenAndServe())
 }

@@ -22,11 +22,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/golang/protobuf/proto"
 	"github.com/google/battery-historian/bugreportutils"
 	"github.com/google/battery-historian/checkinparse"
 	"github.com/google/battery-historian/historianutils"
 	bspb "github.com/google/battery-historian/pb/batterystats_proto"
+	"google.golang.org/protobuf/proto"
 )
 
 const (

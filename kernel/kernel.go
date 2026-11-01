@@ -78,8 +78,8 @@ func (e *entry) GetValue() string {
 
 func (e *entry) GetKey(desc string) csv.Key {
 	return csv.Key{
-		desc,
-		e.value,
+		Metric:     desc,
+		Identifier: e.value,
 	}
 }
 

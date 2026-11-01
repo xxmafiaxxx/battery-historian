@@ -20,7 +20,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"log"
 	"reflect"
 	"regexp"
@@ -29,11 +28,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/golang/protobuf/proto"
 	"github.com/google/battery-historian/checkinparse"
 	"github.com/google/battery-historian/csv"
 	"github.com/google/battery-historian/historianutils"
 	"github.com/google/battery-historian/packageutils"
+	"google.golang.org/protobuf/proto"
 
 	usagepb "github.com/google/battery-historian/pb/usagestats_proto"
 )
@@ -479,8 +478,8 @@ func (s *ServiceUID) GetValue() string {
 // same service name, so we use the UID/Service name pair as the key.
 func (s *ServiceUID) GetKey(desc string) csv.Key {
 	return csv.Key{
-		desc,
-		fmt.Sprintf("%s:%s", s.UID, s.Service),
+		Metric:     desc,
+		Identifier: fmt.Sprintf("%s:%s", s.UID, s.Service),
 	}
 }
 
@@ -526,8 +525,8 @@ func (s *tsInt) GetValue() string {
 // GetKey returns the unique identifier for the entry.
 func (s *tsInt) GetKey(desc string) csv.Key {
 	return csv.Key{
-		desc,
-		"",
+		Metric:     desc,
+		Identifier: "",
 	}
 }
 
@@ -625,8 +624,8 @@ func (s *tsBool) GetValue() string {
 // GetKey returns the unique identifier for the entry.
 func (s *tsBool) GetKey(desc string) csv.Key {
 	return csv.Key{
-		desc,
-		"",
+		Metric:     desc,
+		Identifier: "",
 	}
 }
 
@@ -703,8 +702,8 @@ func (s *tsString) GetValue() string {
 // GetKey returns the unique identifier for the entry.
 func (s *tsString) GetKey(desc string) csv.Key {
 	return csv.Key{
-		desc,
-		"",
+		Metric:     desc,
+		Identifier: "",
 	}
 }
 
@@ -3110,7 +3109,7 @@ func AnalyzeHistory(csvWriter io.Writer, history, format string, pum PackageUIDM
 	if format == FormatTotalTime {
 		writer = csvWriter
 	} else {
-		writer = ioutil.Discard
+		writer = io.Discard
 	}
 
 	csvState := csv.NewState(writer, true)
@@ -3212,7 +3211,7 @@ func extractLevel(h []string, curMs int64, d *deltaMapping) ([]csv.Event, []erro
 	for _, l := range h {
 		// Ignore errors as most will be due to incomplete (non battery level) events.
 		// e.g. two negative transitions for "Temp White List
-		ds, _, _ = analyzeHistoryLine(ioutil.Discard, csvState, ds, as, &sums, nil, pum, d, l, true)
+		ds, _, _ = analyzeHistoryLine(io.Discard, csvState, ds, as, &sums, nil, pum, d, l, true)
 	}
 	csvState.PrintAllReset(ds.CurrentTime)
 	es, errs := csv.ExtractEvents(b.String(), []string{BatteryLevel})

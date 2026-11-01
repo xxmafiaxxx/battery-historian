@@ -17,10 +17,10 @@ package main
 import (
 	"bufio"
 	"flag"
-	"fmt"
-	"io/ioutil"
-	"log"
+	"io"
 	"os"
+	"fmt"
+	"log"
 	"path/filepath"
 
 	"github.com/google/battery-historian/bugreportutils"
@@ -60,7 +60,7 @@ func checkFlags() {
 // Writes csv data to csvWriter if a csv file is specified.
 func processFile(filePath string, csvWriter *bufio.Writer, isFirstFile bool) string {
 	// Read the whole file
-	c, err := ioutil.ReadFile(filePath)
+	c, err := os.ReadFile(filePath)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -70,7 +70,7 @@ func processFile(filePath string, csvWriter *bufio.Writer, isFirstFile bool) str
 	}
 	fmt.Printf("Parsing %s\n", fname)
 
-	writer := ioutil.Discard
+	writer := io.Discard
 	if csvWriter != nil && *summaryFormat == parseutils.FormatTotalTime {
 		writer = csvWriter
 	}
@@ -102,7 +102,7 @@ func processFile(filePath string, csvWriter *bufio.Writer, isFirstFile bool) str
 			fmt.Println(err.Error())
 		}
 	}
-	fmt.Println("\nNumber of summaries ", len(a), "\n")
+	fmt.Print("\nNumber of summaries ", len(a), " \n\n")
 	for _, s := range a {
 		s.Print(&rep.OutputBuffer)
 	}

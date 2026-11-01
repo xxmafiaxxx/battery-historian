@@ -16,6 +16,8 @@ syntax = "proto2";
 
 package build;
 
+option go_package = "github.com/google/battery-historian/pb/build_proto";
+
 message Build {
 
   // Fingerprint, e.g. "google/mysid/toro:4.0.4/IMM06/243892:userdebug/dev-keys"

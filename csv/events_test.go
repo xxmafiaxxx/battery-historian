@@ -160,7 +160,7 @@ func TestExtractEvents(t *testing.T) {
 			t.Errorf("%v: ExtractEvents(%v) generated unexpected errors\n got %v\n want %v", test.desc, test.input, errs, test.wantErrs)
 		}
 		if !reflect.DeepEqual(got, want) {
-			t.Errorf("%v: ExtractEvents(%v) generated incorrect events:\n got: %q\n want: %q", test.desc, test.input, got, want)
+			t.Errorf("%v: ExtractEvents(%v) generated incorrect events:\n got: %v\n want: %v", test.desc, test.input, got, want)
 		}
 	}
 }

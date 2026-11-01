@@ -23,9 +23,9 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/golang/protobuf/proto"
 	"github.com/google/battery-historian/checkinparse"
 	"github.com/google/battery-historian/packageutils"
+	"google.golang.org/protobuf/proto"
 
 	bspb "github.com/google/battery-historian/pb/batterystats_proto"
 	bldpb "github.com/google/battery-historian/pb/build_proto"

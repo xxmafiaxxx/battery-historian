@@ -18,6 +18,8 @@
 syntax = "proto2";
 package usagestats;
 
+option go_package = "github.com/google/battery-historian/pb/usagestats_proto";
+
 message PackageInfo {
   // Apps / service name. (e.g. com.google.android.apps.books)
   required string pkg_name = 1;

@@ -20,7 +20,6 @@ import (
 	"flag"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"os"
 	"path"
@@ -134,7 +133,7 @@ func main() {
 		}
 		defer resp.Body.Close()
 
-		contents, err := ioutil.ReadAll(resp.Body)
+		contents, err := io.ReadAll(resp.Body)
 		if err != nil {
 			fmt.Printf("Couldn't get zip contents: %v\n", err)
 			return

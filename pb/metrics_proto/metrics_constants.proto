@@ -19,6 +19,8 @@ syntax = "proto2";
 
 package metrics;
 
+option go_package = "github.com/google/battery-historian/pb/metrics_proto";
+
 message MetricsEvent {
 
   // Known visual elements: views or controls.
