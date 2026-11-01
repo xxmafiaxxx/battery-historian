@@ -16,10 +16,23 @@
 # limitations under the License.
 #
 
-# To regenerate the compiled Go files if the protos are modified.
-cd $GOPATH/src
-protoc --go_out=. github.com/google/battery-historian/pb/batterystats_proto/*.proto
-protoc --go_out=. github.com/google/battery-historian/pb/build_proto/*.proto
-protoc --go_out=. github.com/google/battery-historian/pb/metrics_proto/*.proto
-protoc --go_out=. github.com/google/battery-historian/pb/session_proto/*.proto
-protoc --go_out=. github.com/google/battery-historian/pb/usagestats_proto/*.proto
+# Regenerates the compiled Go files in pb/ after modifying a .proto file.
+#
+# Requires protoc (>= v25) and protoc-gen-go:
+#   go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
+# with $GOBIN (usually $GOPATH/bin) on your $PATH.
+#
+# Run from the repository root.
+
+set -e
+cd "$(dirname "$0")"
+
+protoc -I . --go_out=. --go_opt=paths=source_relative \
+  pb/batterystats_proto/batterystats.proto \
+  pb/build_proto/build.proto \
+  pb/metrics_proto/metrics_constants.proto \
+  pb/session_proto/session.proto \
+  pb/usagestats_proto/android_battery_usage.proto \
+  pb/usagestats_proto/android_package_info.proto
+
+echo "Regenerated pb/*.pb.go"

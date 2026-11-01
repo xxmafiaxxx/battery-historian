@@ -61,14 +61,17 @@ export function Timeline({ logs, timeZone }: { logs: ParsedLog[]; timeZone: stri
     let min = Infinity;
     let max = -Infinity;
     for (const l of logs) {
-      const s = l.startMs ?? l.extent.min;
+      // A zero startMs from the backend means "not provided"; use the parsed extent.
+      const s = l.startMs && l.startMs > 0 ? l.startMs : l.extent.min;
       if (s > 0 && s < min) min = s;
       if (l.extent.max > max) max = l.extent.max;
     }
     if (!Number.isFinite(min) || !Number.isFinite(max) || max <= min) {
       return { min: 0, max: 1 };
     }
-    return { min, max };
+    // Pad 2% on each side so first/last events aren't glued to the edges.
+    const pad = (max - min) * 0.02;
+    return { min: min - pad, max: max + pad };
   }, [logs]);
 
   // Build lanes once per parsed log set.
@@ -103,7 +106,10 @@ export function Timeline({ logs, timeZone }: { logs: ParsedLog[]; timeZone: stri
     const draw = () => {
       const dpr = window.devicePixelRatio || 1;
       const width = wrap.clientWidth;
-      const height = MARGIN.top + visibleLanes.length * (LANE_HEIGHT + LANE_GAP) + MARGIN.bottom;
+      // Always reserve at least one band so the battery level line has space
+      // even when every bar series is toggled off.
+      const bands = Math.max(visibleLanes.length, 1);
+      const height = MARGIN.top + bands * (LANE_HEIGHT + LANE_GAP) + MARGIN.bottom;
       canvas.width = width * dpr;
       canvas.height = height * dpr;
       canvas.style.width = `${width}px`;
@@ -159,7 +165,7 @@ export function Timeline({ logs, timeZone }: { logs: ParsedLog[]; timeZone: stri
             started = false;
             continue;
           }
-          const py = MARGIN.top + (100 - clamp(Number(e.value), 0, 100)) * 0.01 * (visibleLanes.length * (LANE_HEIGHT + LANE_GAP));
+          const py = MARGIN.top + (100 - clamp(Number(e.value), 0, 100)) * 0.01 * (bands * (LANE_HEIGHT + LANE_GAP));
           if (!started) {
             ctx.moveTo(px, py);
             started = true;

@@ -28,16 +28,16 @@ export function LevelSummaryTable({ summary }: { summary: { header: string[]; ro
         <tbody>
           {shown.map((r, i) => (
             <tr key={i}>
-              <td>{new Date(Number(r.StartTimeMs)).toLocaleString()}</td>
-              <td>{new Date(Number(r.EndTimeMs)).toLocaleString()}</td>
+              <td>{levelRowDate(r.StartTime)}</td>
+              <td>{levelRowDate(r.EndTime)}</td>
               <td>{formatDuration(Number(r.Duration))}</td>
               <td>
                 {r.InitialBatteryLevel} → {r.FinalBatteryLevel}
               </td>
               <td>{Number(r.LevelDropPerHour).toFixed(2)}</td>
               <td>{r.Reason}</td>
-              <td>{summaryCell(r.ScreenOnSummary_num, r.ScreenOnSummary_dur)}</td>
-              <td>{summaryCell(r.CPURunningSummary_num, r.CPURunningSummary_dur)}</td>
+              <td>{summaryCell(r['ScreenOn.num'], r['ScreenOn.dur'])}</td>
+              <td>{summaryCell(r['CPURunning.num'], r['CPURunning.dur'])}</td>
             </tr>
           ))}
         </tbody>
@@ -53,4 +53,13 @@ function summaryCell(num: string | undefined, dur: string | undefined): string {
   }
   const d = Number(dur ?? 0);
   return `${num}× ${formatDuration(d)}`;
+}
+
+/** Start/end columns carry epoch milliseconds as strings. */
+function levelRowDate(ms: string | undefined): string {
+  const n = Number(ms);
+  if (!ms || Number.isNaN(n) || n <= 0) {
+    return '—';
+  }
+  return new Date(n).toLocaleString();
 }
