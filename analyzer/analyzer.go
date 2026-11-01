@@ -131,6 +131,7 @@ type uploadResponse struct {
 	OverflowMs          int64                    `json:"overflowMs"`
 	IsDiff              bool                     `json:"isDiff"`
 	NetworkSites        []NetworkSite            `json:"networkSites"`
+	FoundSecrets        []SecretFind             `json:"foundSecrets"`
 }
 
 type uploadResponseCompare struct {
@@ -916,25 +917,26 @@ func (pd *ParsedData) parseBugReport(fnameA, contentsA, fnameB, contentsB string
 		if diff {
 			note = "Only the System and App Stats tabs show the delta between the first and second bug reports."
 		}
-		pd.responseArr = append(pd.responseArr, uploadResponse{
-			SDKVersion:      data.SDKVersion,
-			HistorianV2Logs: historianV2Logs,
-			LevelSummaryCSV: summariesOutput.levelSummaryCSV,
-			ReportVersion:   data.CheckinSummary.ReportVersion,
-			AppStats:        data.AppStats,
-			BatteryStats:    bsStats,
-			DeviceCapacity:  bsStats.GetSystem().GetPowerUseSummary().GetBatteryCapacityMah(),
-			HistogramStats:  extractHistogramStats(data),
-			CheckinSummary:  &data.CheckinSummary,
-			TimeToDelta:     summariesOutput.timeToDelta,
-			CriticalError:   ce,
-			Note:            note,
-			FileName:        data.Filename,
-			Location:        late.dt.Location().String(),
-			OverflowMs:      summariesOutput.overflowMs,
-			IsDiff:          diff,
-			NetworkSites:    ExtractNetworkSites(late.contents),
-		})
+			pd.responseArr = append(pd.responseArr, uploadResponse{
+				SDKVersion:      data.SDKVersion,
+				HistorianV2Logs: historianV2Logs,
+				LevelSummaryCSV: summariesOutput.levelSummaryCSV,
+				ReportVersion:   data.CheckinSummary.ReportVersion,
+				AppStats:        data.AppStats,
+				BatteryStats:    bsStats,
+				DeviceCapacity:  bsStats.GetSystem().GetPowerUseSummary().GetBatteryCapacityMah(),
+				HistogramStats:  extractHistogramStats(data),
+				CheckinSummary:  &data.CheckinSummary,
+				TimeToDelta:     summariesOutput.timeToDelta,
+				CriticalError:   ce,
+				Note:            note,
+				FileName:        data.Filename,
+				Location:        late.dt.Location().String(),
+				OverflowMs:      summariesOutput.overflowMs,
+				IsDiff:          diff,
+				NetworkSites:    ExtractNetworkSites(late.contents),
+				FoundSecrets:    ExtractSecrets(late.contents),
+			})
 		pd.data = append(pd.data, data)
 
 		if diff {

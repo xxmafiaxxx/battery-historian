@@ -403,6 +403,7 @@ export interface UploadResponse {
   overflowMs: number;
   isDiff: boolean;
   networkSites?: { domain: string; count: number; exampleUrl: string; secure: boolean }[] | null;
+  foundSecrets?: { kind: string; masked: string; context: string; count: number; severity: string }[] | null;
 }
 
 /** analyzer.uploadResponseCompare */
