@@ -130,6 +130,7 @@ type uploadResponse struct {
 	Location            string                   `json:"location"`
 	OverflowMs          int64                    `json:"overflowMs"`
 	IsDiff              bool                     `json:"isDiff"`
+	NetworkSites        []NetworkSite            `json:"networkSites"`
 }
 
 type uploadResponseCompare struct {
@@ -932,6 +933,7 @@ func (pd *ParsedData) parseBugReport(fnameA, contentsA, fnameB, contentsB string
 			Location:        late.dt.Location().String(),
 			OverflowMs:      summariesOutput.overflowMs,
 			IsDiff:          diff,
+			NetworkSites:    ExtractNetworkSites(late.contents),
 		})
 		pd.data = append(pd.data, data)
 

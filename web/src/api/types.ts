@@ -402,6 +402,7 @@ export interface UploadResponse {
   location: string;
   overflowMs: number;
   isDiff: boolean;
+  networkSites?: { domain: string; count: number; exampleUrl: string; secure: boolean }[] | null;
 }
 
 /** analyzer.uploadResponseCompare */

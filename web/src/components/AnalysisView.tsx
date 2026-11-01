@@ -6,6 +6,7 @@ import { formatDuration } from '../data/time';
 import { downloadText } from '../api/client';
 import { SystemStats } from './SystemStats';
 import { AppStats } from './AppStats';
+import { NetworkAccess } from './NetworkAccess';
 import { LevelSummaryTable } from './LevelSummaryTable';
 import { Timeline } from './Timeline';
 import { LevelChart } from './LevelChart';
@@ -158,11 +159,14 @@ export function AnalysisView({ data }: { data: UploadResponse }) {
 
       <nav className="analysis-jump" aria-label="Sections">
         <a href="#historian">Historian</a>
+        <a href="#network-access">Network access</a>
         <a href="#level-summary">Level summary</a>
         <a href="#system-stats">System stats {data.checkinSummary ? `· ${data.checkinSummary.ReportVersion ? `v${data.checkinSummary.ReportVersion}` : ''}` : ''}</a>
         <a href="#app-stats">App stats · {appStats.length} apps</a>
         <a href="#historian-logs">Logs · {totalEntries} events</a>
       </nav>
+
+      <NetworkAccess batteryStats={data.batteryStats ?? null} appStats={appStats} sites={data.networkSites ?? null} historianV2Logs={data.historianV2Logs ?? []} />
 
       <section className="card" id="level-summary">
         <h3>Battery level summaries</h3>
