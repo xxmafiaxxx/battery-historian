@@ -161,6 +161,14 @@ func (s *rootServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		analyzer.AdbLastReportHandler(w, r)
 		return
 	}
+	if r.URL.Path == "/api/adb/calls" && r.Method == "GET" {
+		analyzer.CallsHandler(w, r)
+		return
+	}
+	if r.URL.Path == "/api/adb/sms" && r.Method == "GET" {
+		analyzer.SmsHandler(w, r)
+		return
+	}
 	switch r.Method {
 	case "POST":
 		r.ParseForm()

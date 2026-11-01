@@ -5,6 +5,7 @@ import type { AdbDevice } from '../api/types';
 import { click } from '../sound';
 import { LivePanel } from './LivePanel';
 import { LiveFullPanel } from './LiveFullPanel';
+import { CommsPanel } from './CommsPanel';
 
 interface Props {
   onSubmit: (input: {
@@ -203,6 +204,12 @@ export function UploadView({ onSubmit, onPull, onFallbackPull, busy, error }: Pr
             </div>
           )}
         </section>
+      )}
+
+      {pullable.length > 0 && selectedSerial && (
+        <div style={{ marginTop: 14 }}>
+          <CommsPanel serial={selectedSerial} />
+        </div>
       )}
 
       <div className="divider">or upload a file</div>

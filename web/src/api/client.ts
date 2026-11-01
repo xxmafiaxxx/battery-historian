@@ -167,3 +167,17 @@ export function downloadText(name: string, text: string, mime = 'text/csv'): voi
   a.click();
   URL.revokeObjectURL(url);
 }
+
+export interface CallRecord { number: string; name: string; dateMs: number; date: string; durationSec: number; type: number; typeLabel: string; }
+export interface SmsRecord { address: string; body: string; dateMs: number; date: string; type: number; typeLabel: string; read: number; }
+
+export async function fetchCallHistory(serial: string, limit = 300): Promise<{ calls: CallRecord[]; count: number }> {
+  const res = await fetch(`/api/adb/calls?serial=${encodeURIComponent(serial)}&limit=${limit}`);
+  if (!res.ok) throw new Error(await res.text());
+  return (await res.json()) as { calls: CallRecord[]; count: number };
+}
+export async function fetchSmsHistory(serial: string, limit = 300): Promise<{ messages: SmsRecord[]; count: number }> {
+  const res = await fetch(`/api/adb/sms?serial=${encodeURIComponent(serial)}&limit=${limit}`);
+  if (!res.ok) throw new Error(await res.text());
+  return (await res.json()) as { messages: SmsRecord[]; count: number };
+}
