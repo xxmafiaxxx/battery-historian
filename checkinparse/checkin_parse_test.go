@@ -38,6 +38,7 @@ const v36Checkin = `9,0,i,vers,36,36,BP3A.250705.014,BP3A.250705.014
 9,10007,l,rpm,some_state,5000,10,4000,8
 9,10007,l,rpm,some_state,1000,2,800,1
 9,10007,l,rpm,some_voter,500,5,400,4
+9,10007,l,wl,some.wakelock,1000,f,2,-1,-1,-1,2000,p,4,1500,3,300,500,bp,1,100,-1,-1,50,w,1,-1,-1,-1
 9,10007,l,awl,100000,50000
 9,10007,l,jbc,7
 9,10007,l,wmc,3
@@ -78,6 +79,17 @@ func findRPM(t *testing.T, system *bspb.BatteryStats_System, name string) *bspb.
 	return nil
 }
 
+func findWakelock(t *testing.T, app *bspb.BatteryStats_App, name string) *bspb.BatteryStats_App_Wakelock {
+	t.Helper()
+	for _, w := range app.GetWakelock() {
+		if w.GetName() == name {
+			return w
+		}
+	}
+	t.Fatalf("no wakelock named %q found", name)
+	return nil
+}
+
 func TestParseV36Checkin(t *testing.T) {
 	stats, warnings, errs := parseCheckinLines(t, v36Checkin)
 
@@ -107,6 +119,25 @@ func TestParseV36Checkin(t *testing.T) {
 	}
 	if got, want := app.GetForegroundService().GetCount(), float32(2); got != want {
 		t.Errorf("fgs count = %v, want %v", got, want)
+	}
+
+	// Wakelock: full/partial/background/window groups, including the
+	// background group added to the checkin dump after v21.
+	wl := findWakelock(t, app, "some.wakelock")
+	if got, want := wl.GetPartialTimeMsec(), float32(2000); got != want {
+		t.Errorf("wl partial_time_msec = %v, want %v", got, want)
+	}
+	if got, want := wl.GetPartialTotalDurationMsec(), int64(300); got != want {
+		t.Errorf("wl partial_total_duration_msec = %v, want %v", got, want)
+	}
+	if got, want := wl.GetBackgroundTimeMsec(), float32(500); got != want {
+		t.Errorf("wl background_time_msec = %v, want %v (bg group must not be skipped)", got, want)
+	}
+	if got, want := wl.GetBackgroundCurrentDurationMsec(), int64(100); got != want {
+		t.Errorf("wl background_current_duration_msec = %v, want %v", got, want)
+	}
+	if got, want := wl.GetWindowTimeMsec(), float32(50); got != want {
+		t.Errorf("wl window_time_msec = %v, want %v", got, want)
 	}
 
 	// System-level: rpm lines with the same name accumulate into one entry.

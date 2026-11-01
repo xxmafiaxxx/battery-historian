@@ -476,7 +476,17 @@ message BatteryStats {
       optional int64 window_max_duration_msec = 13;
       optional int64 window_total_duration_msec = 16;
 
-      // Next tag = 17
+      // Background partial wakelocks: time the partial wakelock was held while
+      // the app was in the background. The checkin dump prints this group
+      // between the partial and window groups (each group being
+      // time, "bp", count, current, max, total).
+      optional float background_time_msec = 17;
+      optional float background_count = 18;
+      optional int64 background_current_duration_msec = 19;
+      optional int64 background_max_duration_msec = 20;
+      optional int64 background_total_duration_msec = 21;
+
+      // Next tag = 22
     };
     repeated Wakelock wakelock = 11; // wl.
 

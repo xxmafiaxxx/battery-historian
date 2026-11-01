@@ -126,12 +126,16 @@ const (
 	foregroundServiceData    = "fgs"
 	resourcePowerManagerData = "rpm"
 	aggregatedWakelockData   = "awl" // cumulative partial wakelock times per uid
-	jobCompletionData        = "jbc"
-	jobsDeferredData         = "jbd"
-	globalCpuFreqData        = "gcf"
-	cpuTimesAtFreqData       = "ctf"
-	wifiMulticastTotalData   = "wmct"
-	wifiMulticastData        = "wmc"
+	// Checkin battery history lines: consumed by parseutils.AnalyzeHistory,
+	// not by this parser.
+	historyData            = "h"
+	historyStringPool      = "hsp"
+	jobCompletionData      = "jbc"
+	jobsDeferredData       = "jbd"
+	globalCpuFreqData      = "gcf"
+	cpuTimesAtFreqData     = "ctf"
+	wifiMulticastTotalData = "wmct"
+	wifiMulticastData      = "wmc"
 )
 
 // recognizedUnknownSections are checkin sections that are known but
@@ -145,6 +149,8 @@ var recognizedUnknownSections = map[string]bool{
 	cpuTimesAtFreqData:     true,
 	wifiMulticastTotalData: true,
 	wifiMulticastData:      true,
+	historyData:            true, // battery history lines; parsed by parseutils
+	historyStringPool:      true, // history string pool; parsed by parseutils
 }
 
 var (
@@ -371,8 +377,8 @@ var (
 		"batterystats.BatteryStats.App.WakeupAlarm":            {"name": true},
 		"batterystats.BatteryStats.ControllerActivity.TxLevel": {"level": true},
 		// System fields
-		"batterystats.BatteryStats.System.Battery":            {"start_clock_time_msec": true},
-		"batterystats.BatteryStats.System.BluetoothState":     {"name": true},
+		"batterystats.BatteryStats.System.Battery":        {"start_clock_time_msec": true},
+		"batterystats.BatteryStats.System.BluetoothState": {"name": true},
 		// It doesn't make sense to diff ChargeStep fields.
 		"batterystats.BatteryStats.System.DataConnection":      {"name": true},
 		"batterystats.BatteryStats.System.KernelWakelock":      {"name": true},
@@ -1821,8 +1827,8 @@ func parseAppSync(record []string, app *bspb.BatteryStats_App) (string, []error)
 //	    window wakelock time,  "w" (for window),  window wakelock count, window wakelock current duration, window wakelock max duration, window wakelock total duration
 //	[Note: wakelock total duration differs from wakelock time in that the latter is pooled (blame is shared amongst all apps), whereas the former is not.]
 func parseAppWakelock(c checkinutil.Counter, reportVersion int32, record []string, app *bspb.BatteryStats_App) (string, error) {
-	var ft, fc, pt, pc, wt, wc float32 // Proto backwards compatibility...these were float32 before.
-	var fMax, fCur, fTot, pMax, pCur, pTot, wMax, wCur, wTot int64
+	var ft, fc, pt, pc, bt, bc, wt, wc float32 // Proto backwards compatibility...these were float32 before.
+	var fMax, fCur, fTot, pMax, pCur, pTot, bMax, bCur, bTot, wMax, wCur, wTot int64
 	var name, warn string
 	var rem []string
 	var err error
@@ -1837,10 +1843,23 @@ func parseAppWakelock(c checkinutil.Counter, reportVersion int32, record []strin
 			&wt, nil /*"w"*/, &wc, &wCur, &wMax)
 	} else { // reportVersion >= 21
 		// The line contains letters that represent wakelock types, we skip those fields.
+		// Modern BatteryStats (CHECKIN_VERSION 22+) inserts the background
+		// partial group between the partial and window groups. Older reports
+		// simply lack it, so it is parsed as a trailing-optional group: try
+		// with the bg group first and fall back for short records.
 		rem, err = parseSlice(c, wakelockData, record, &name,
 			&ft, nil /*"f"*/, &fc, &fCur, &fMax, &fTot,
 			&pt, nil /*"p"*/, &pc, &pCur, &pMax, &pTot,
+			&bt, nil /*"bp"*/, &bc, &bCur, &bMax, &bTot,
 			&wt, nil /*"w"*/, &wc, &wCur, &wMax, &wTot)
+		if err != nil {
+			// Pre-v22 report: no background group.
+			bt, bc, bCur, bMax, bTot = 0, 0, 0, 0, 0
+			rem, err = parseSlice(c, wakelockData, record, &name,
+				&ft, nil /*"f"*/, &fc, &fCur, &fMax, &fTot,
+				&pt, nil /*"p"*/, &pc, &pCur, &pMax, &pTot,
+				&wt, nil /*"w"*/, &wc, &wCur, &wMax, &wTot)
+		}
 	}
 	if len(rem) > 0 {
 		warn = fmt.Sprintf("%s has %d new fields", wakelockData, len(rem))
@@ -1872,6 +1891,13 @@ func parseAppWakelock(c checkinutil.Counter, reportVersion int32, record []strin
 			if pTot != -1 { // if not tracked, could be -1. In that case, don't sum -1s; just leave the original value (0 or -1).
 				w1.PartialTotalDurationMsec = proto.Int64(w1.GetPartialTotalDurationMsec() + pTot)
 			}
+			w1.BackgroundTimeMsec = proto.Float32(w1.GetBackgroundTimeMsec() + bt)
+			w1.BackgroundCount = proto.Float32(w1.GetBackgroundCount() + bc)
+			w1.BackgroundCurrentDurationMsec = proto.Int64(historianutils.MaxInt64(w1.GetBackgroundCurrentDurationMsec(), bCur))
+			w1.BackgroundMaxDurationMsec = proto.Int64(historianutils.MaxInt64(w1.GetBackgroundMaxDurationMsec(), bMax))
+			if bTot != -1 {
+				w1.BackgroundTotalDurationMsec = proto.Int64(w1.GetBackgroundTotalDurationMsec() + bTot)
+			}
 			w1.WindowTimeMsec = proto.Float32(w1.GetWindowTimeMsec() + wt)
 			w1.WindowCount = proto.Float32(w1.GetWindowCount() + wc)
 			// Current and max should only track the longest value for the wakelock, so take the maximum, rather than the sum, of the data.
@@ -1888,22 +1914,27 @@ func parseAppWakelock(c checkinutil.Counter, reportVersion int32, record []strin
 
 	// Wakelock wasn't found in app's list of wakelocks so add it as a new one.
 	app.Wakelock = append(app.Wakelock, &bspb.BatteryStats_App_Wakelock{
-		Name:                       proto.String(name),
-		FullTimeMsec:               proto.Float32(ft),
-		FullCount:                  proto.Float32(fc),
-		FullCurrentDurationMsec:    proto.Int64(fCur),
-		FullMaxDurationMsec:        proto.Int64(fMax),
-		FullTotalDurationMsec:      proto.Int64(fTot),
-		PartialTimeMsec:            proto.Float32(pt),
-		PartialCount:               proto.Float32(pc),
-		PartialCurrentDurationMsec: proto.Int64(pCur),
-		PartialMaxDurationMsec:     proto.Int64(pMax),
-		PartialTotalDurationMsec:   proto.Int64(pTot),
-		WindowTimeMsec:             proto.Float32(wt),
-		WindowCount:                proto.Float32(wc),
-		WindowCurrentDurationMsec:  proto.Int64(wCur),
-		WindowMaxDurationMsec:      proto.Int64(wMax),
-		WindowTotalDurationMsec:    proto.Int64(wTot),
+		Name:                          proto.String(name),
+		FullTimeMsec:                  proto.Float32(ft),
+		FullCount:                     proto.Float32(fc),
+		FullCurrentDurationMsec:       proto.Int64(fCur),
+		FullMaxDurationMsec:           proto.Int64(fMax),
+		FullTotalDurationMsec:         proto.Int64(fTot),
+		PartialTimeMsec:               proto.Float32(pt),
+		PartialCount:                  proto.Float32(pc),
+		PartialCurrentDurationMsec:    proto.Int64(pCur),
+		PartialMaxDurationMsec:        proto.Int64(pMax),
+		PartialTotalDurationMsec:      proto.Int64(pTot),
+		BackgroundTimeMsec:            proto.Float32(bt),
+		BackgroundCount:               proto.Float32(bc),
+		BackgroundCurrentDurationMsec: proto.Int64(bCur),
+		BackgroundMaxDurationMsec:     proto.Int64(bMax),
+		BackgroundTotalDurationMsec:   proto.Int64(bTot),
+		WindowTimeMsec:                proto.Float32(wt),
+		WindowCount:                   proto.Float32(wc),
+		WindowCurrentDurationMsec:     proto.Int64(wCur),
+		WindowMaxDurationMsec:         proto.Int64(wMax),
+		WindowTotalDurationMsec:       proto.Int64(wTot),
 	})
 	return warn, nil
 }
@@ -2621,7 +2652,7 @@ func accumulate(p1, p2 proto.Message) error {
 		case protoreflect.Uint64Kind, protoreflect.Fixed64Kind:
 			m1.Set(fd, protoreflect.ValueOfUint64(m1.Get(fd).Uint()+m2.Get(fd).Uint()))
 		case protoreflect.BoolKind:
-			m1.Set(fd, protoreflect.ValueOfBool(m1.Get(fd).Bool()||m2.Get(fd).Bool()))
+			m1.Set(fd, protoreflect.ValueOfBool(m1.Get(fd).Bool() || m2.Get(fd).Bool()))
 		}
 	}
 

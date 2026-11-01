@@ -1,0 +1,305 @@
+:root {
+  --bg: #f5f7fa;
+  --card: #ffffff;
+  --ink: #1f2733;
+  --muted: #5b6472;
+  --line: #e3e7ee;
+  --blue: #265a9e;
+  --blue-dark: #1c4a85;
+  --green: #2e8b57;
+  --red: #b23b3b;
+  --amber: #8a6d3b;
+  --amber-bg: #fdf5e3;
+  --red-bg: #fbeaea;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font: 14px/1.5 system-ui, 'Segoe UI', Roboto, sans-serif;
+}
+
+.app {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 16px 20px 48px;
+}
+
+.app-header h1 {
+  font-size: 26px;
+  margin: 12px 0 4px;
+  color: var(--blue-dark);
+}
+
+.subtitle {
+  color: var(--muted);
+  margin: 0 0 20px;
+}
+
+.app-footer {
+  margin-top: 40px;
+  color: var(--muted);
+  font-size: 12px;
+  border-top: 1px solid var(--line);
+  padding-top: 12px;
+}
+
+.card {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 16px 20px;
+  margin: 16px 0;
+  overflow: hidden;
+}
+
+.card h3 {
+  margin: 0 0 12px;
+  font-size: 16px;
+}
+
+.card h4 {
+  margin: 18px 0 8px;
+  font-size: 14px;
+}
+
+.report-head h2 {
+  margin: 8px 0 6px;
+  font-size: 20px;
+}
+
+.meta-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 6px 0;
+}
+
+.chip {
+  display: inline-block;
+  background: #eef2f8;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 1px 10px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.banner {
+  border-radius: 8px;
+  padding: 10px 14px;
+  margin: 10px 0;
+  white-space: pre-wrap;
+}
+
+.banner-error {
+  background: var(--red-bg);
+  color: var(--red);
+  border: 1px solid #efc9c9;
+}
+
+.banner-warn {
+  background: var(--amber-bg);
+  color: var(--amber);
+  border: 1px solid #ecdfc0;
+}
+
+.toolbar {
+  margin: 12px 0;
+}
+
+.btn {
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 8px 16px;
+  font-size: 14px;
+  cursor: pointer;
+  color: var(--ink);
+}
+
+.btn:hover {
+  background: #f2f5f9;
+}
+
+.btn:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+.btn-primary {
+  background: var(--blue);
+  border-color: var(--blue);
+  color: #fff;
+  font-weight: 600;
+}
+
+.btn-primary:hover {
+  background: var(--blue-dark);
+}
+
+.btn-small {
+  padding: 2px 10px;
+  font-size: 12px;
+  margin-left: 8px;
+}
+
+.upload-card {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 24px;
+  max-width: 640px;
+}
+
+.file-row {
+  display: grid;
+  grid-template-columns: 160px 1fr;
+  gap: 4px 12px;
+  align-items: center;
+  margin: 12px 0;
+}
+
+.file-label {
+  font-weight: 600;
+}
+
+.hint {
+  grid-column: 2;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.check-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin: 8px 0;
+}
+
+.data-table {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 13px;
+}
+
+.data-table th,
+.data-table td {
+  text-align: left;
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--line);
+}
+
+.data-table thead th {
+  color: var(--muted);
+  font-weight: 600;
+  border-bottom: 2px solid var(--line);
+  white-space: nowrap;
+}
+
+.row-total td {
+  font-weight: 700;
+}
+
+.row-warn td {
+  color: var(--amber);
+}
+
+.row-selected td {
+  background: #eef2f8;
+}
+
+.table-scroll {
+  overflow-x: auto;
+}
+
+.empty {
+  color: var(--muted);
+  font-style: italic;
+}
+
+.app-detail {
+  margin-top: 16px;
+  border-top: 1px solid var(--line);
+  padding-top: 10px;
+}
+
+.detail-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.detail-block {
+  background: #f8fafc;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 8px 12px;
+}
+
+.detail-title {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.logs-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.logs-list li {
+  padding: 4px 0;
+  border-bottom: 1px dashed var(--line);
+}
+
+.timeline-card .timeline-wrap {
+  position: relative;
+  overflow: hidden;
+}
+
+.timeline-canvas {
+  display: block;
+  cursor: grab;
+}
+
+.timeline-canvas:active {
+  cursor: grabbing;
+}
+
+.timeline-tooltip {
+  position: absolute;
+  background: #1f2733;
+  color: #fff;
+  border-radius: 6px;
+  padding: 6px 10px;
+  font-size: 12px;
+  pointer-events: none;
+  max-width: 280px;
+  z-index: 5;
+}
+
+.series-menu {
+  margin-top: 10px;
+}
+
+.series-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 2px 16px;
+  margin-top: 6px;
+}
+
+.series-grid .count {
+  color: var(--muted);
+  font-size: 12px;
+}

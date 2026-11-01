@@ -3431,8 +3431,17 @@ type BatteryStats_App_Wakelock struct {
 	WindowCurrentDurationMsec *int64 `protobuf:"varint,12,opt,name=window_current_duration_msec,json=windowCurrentDurationMsec" json:"window_current_duration_msec,omitempty"`
 	WindowMaxDurationMsec     *int64 `protobuf:"varint,13,opt,name=window_max_duration_msec,json=windowMaxDurationMsec" json:"window_max_duration_msec,omitempty"`
 	WindowTotalDurationMsec   *int64 `protobuf:"varint,16,opt,name=window_total_duration_msec,json=windowTotalDurationMsec" json:"window_total_duration_msec,omitempty"`
-	unknownFields             protoimpl.UnknownFields
-	sizeCache                 protoimpl.SizeCache
+	// Background partial wakelocks: time the partial wakelock was held while
+	// the app was in the background. The checkin dump prints this group
+	// between the partial and window groups (each group being
+	// time, "bp", count, current, max, total).
+	BackgroundTimeMsec            *float32 `protobuf:"fixed32,17,opt,name=background_time_msec,json=backgroundTimeMsec" json:"background_time_msec,omitempty"`
+	BackgroundCount               *float32 `protobuf:"fixed32,18,opt,name=background_count,json=backgroundCount" json:"background_count,omitempty"`
+	BackgroundCurrentDurationMsec *int64   `protobuf:"varint,19,opt,name=background_current_duration_msec,json=backgroundCurrentDurationMsec" json:"background_current_duration_msec,omitempty"`
+	BackgroundMaxDurationMsec     *int64   `protobuf:"varint,20,opt,name=background_max_duration_msec,json=backgroundMaxDurationMsec" json:"background_max_duration_msec,omitempty"`
+	BackgroundTotalDurationMsec   *int64   `protobuf:"varint,21,opt,name=background_total_duration_msec,json=backgroundTotalDurationMsec" json:"background_total_duration_msec,omitempty"`
+	unknownFields                 protoimpl.UnknownFields
+	sizeCache                     protoimpl.SizeCache
 }
 
 func (x *BatteryStats_App_Wakelock) Reset() {
@@ -3573,6 +3582,41 @@ func (x *BatteryStats_App_Wakelock) GetWindowMaxDurationMsec() int64 {
 func (x *BatteryStats_App_Wakelock) GetWindowTotalDurationMsec() int64 {
 	if x != nil && x.WindowTotalDurationMsec != nil {
 		return *x.WindowTotalDurationMsec
+	}
+	return 0
+}
+
+func (x *BatteryStats_App_Wakelock) GetBackgroundTimeMsec() float32 {
+	if x != nil && x.BackgroundTimeMsec != nil {
+		return *x.BackgroundTimeMsec
+	}
+	return 0
+}
+
+func (x *BatteryStats_App_Wakelock) GetBackgroundCount() float32 {
+	if x != nil && x.BackgroundCount != nil {
+		return *x.BackgroundCount
+	}
+	return 0
+}
+
+func (x *BatteryStats_App_Wakelock) GetBackgroundCurrentDurationMsec() int64 {
+	if x != nil && x.BackgroundCurrentDurationMsec != nil {
+		return *x.BackgroundCurrentDurationMsec
+	}
+	return 0
+}
+
+func (x *BatteryStats_App_Wakelock) GetBackgroundMaxDurationMsec() int64 {
+	if x != nil && x.BackgroundMaxDurationMsec != nil {
+		return *x.BackgroundMaxDurationMsec
+	}
+	return 0
+}
+
+func (x *BatteryStats_App_Wakelock) GetBackgroundTotalDurationMsec() int64 {
+	if x != nil && x.BackgroundTotalDurationMsec != nil {
+		return *x.BackgroundTotalDurationMsec
 	}
 	return 0
 }
@@ -5945,7 +5989,7 @@ var File_pb_batterystats_proto_batterystats_proto protoreflect.FileDescriptor
 
 const file_pb_batterystats_proto_batterystats_proto_rawDesc = "" +
 	"\n" +
-	"(pb/batterystats_proto/batterystats.proto\x12\fbatterystats\x1a\x1apb/build_proto/build.proto\"\xe6\x8f\x01\n" +
+	"(pb/batterystats_proto/batterystats.proto\x12\fbatterystats\x1a\x1apb/build_proto/build.proto\"\x92\x92\x01\n" +
 	"\fBatteryStats\x12\x1b\n" +
 	"\trecord_id\x18\x01 \x01(\tR\brecordId\x12\x1f\n" +
 	"\vandroid_idx\x18\x02 \x01(\tR\n" +
@@ -5985,7 +6029,7 @@ const file_pb_batterystats_proto_batterystats_proto_rawDesc = "" +
 	"\x05error\x18\x1f \x03(\tR\x05error\x12U\n" +
 	"\x10aggregation_type\x18\x19 \x01(\x0e2*.batterystats.BatteryStats.AggregationTypeR\x0faggregationType\x120\n" +
 	"\x03app\x18\x1a \x03(\v2\x1e.batterystats.BatteryStats.AppR\x03app\x129\n" +
-	"\x06system\x18\x1b \x01(\v2!.batterystats.BatteryStats.SystemR\x06system\x1a\xe56\n" +
+	"\x06system\x18\x1b \x01(\v2!.batterystats.BatteryStats.SystemR\x06system\x1a\x919\n" +
 	"\x03App\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12!\n" +
 	"\fversion_code\x18\x02 \x01(\x05R\vversionCode\x12\x10\n" +
@@ -6141,7 +6185,7 @@ const file_pb_batterystats_proto_batterystats_proto_rawDesc = "" +
 	"\x05count\x18\x02 \x01(\x02R\x05count\x1aE\n" +
 	"\x05Video\x12&\n" +
 	"\x0ftotal_time_msec\x18\x01 \x01(\x02R\rtotalTimeMsec\x12\x14\n" +
-	"\x05count\x18\x02 \x01(\x02R\x05count\x1a\xa0\x06\n" +
+	"\x05count\x18\x02 \x01(\x02R\x05count\x1a\xcc\b\n" +
 	"\bWakelock\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12$\n" +
 	"\x0efull_time_msec\x18\x02 \x01(\x02R\ffullTimeMsec\x12\x1d\n" +
@@ -6160,7 +6204,12 @@ const file_pb_batterystats_proto_batterystats_proto_rawDesc = "" +
 	"\fwindow_count\x18\a \x01(\x02R\vwindowCount\x12?\n" +
 	"\x1cwindow_current_duration_msec\x18\f \x01(\x03R\x19windowCurrentDurationMsec\x127\n" +
 	"\x18window_max_duration_msec\x18\r \x01(\x03R\x15windowMaxDurationMsec\x12;\n" +
-	"\x1awindow_total_duration_msec\x18\x10 \x01(\x03R\x17windowTotalDurationMsec\x1a7\n" +
+	"\x1awindow_total_duration_msec\x18\x10 \x01(\x03R\x17windowTotalDurationMsec\x120\n" +
+	"\x14background_time_msec\x18\x11 \x01(\x02R\x12backgroundTimeMsec\x12)\n" +
+	"\x10background_count\x18\x12 \x01(\x02R\x0fbackgroundCount\x12G\n" +
+	" background_current_duration_msec\x18\x13 \x01(\x03R\x1dbackgroundCurrentDurationMsec\x12?\n" +
+	"\x1cbackground_max_duration_msec\x18\x14 \x01(\x03R\x19backgroundMaxDurationMsec\x12C\n" +
+	"\x1ebackground_total_duration_msec\x18\x15 \x01(\x03R\x1bbackgroundTotalDurationMsec\x1a7\n" +
 	"\vWakeupAlarm\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x14\n" +
 	"\x05count\x18\x02 \x01(\x05R\x05count\x1a\xb4\x03\n" +

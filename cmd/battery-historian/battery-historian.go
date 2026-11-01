@@ -20,7 +20,9 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 	"path"
+	"path/filepath"
 	"time"
 
 	"github.com/google/battery-historian/analyzer"
@@ -30,7 +32,8 @@ var (
 	optimized = flag.Bool("optimized", true, "Whether to output optimized js files. Disable for local debugging.")
 	port      = flag.Int("port", 9999, "service port")
 
-	compiledDir   = flag.String("compiled_dir", "./compiled", "Directory containing compiled js file for Historian v2.")
+	compiledDir   = flag.String("compiled_dir", "./compiled", "Directory containing compiled js file for Historian v2 (legacy UI).")
+	distDir       = flag.String("dist_dir", "./web/dist", "Directory containing the built React UI (web/dist).")
 	jsDir         = flag.String("js_dir", "./js", "Directory containing uncompiled js files for Historian v2.")
 	scriptsDir    = flag.String("scripts_dir", "./scripts", "Directory containing Historian and kernel trace Python scripts.")
 	staticDir     = flag.String("static_dir", "./static", "Directory containing static files.")
@@ -90,15 +93,23 @@ func thirdPartyPath() string {
 	return dir
 }
 
+func distPath() string {
+	dir := *distDir
+	if dir == "" {
+		dir = "./web/dist"
+	}
+	return dir
+}
+
 func initFrontend() {
-	urlPrefix := []string{"/", "/historian/"} // Add all paths relative to root
 	urlDirs := map[string]string{
 		"compiled":    compiledPath(),
 		"static":      staticPath(),
 		"third_party": thirdPartyPath(),
 	}
 
-	for _, p := range urlPrefix {
+	// The legacy Closure UI lives entirely under /legacy/.
+	for _, p := range []string{"/legacy/"} {
 		http.Handle(p, &analysisServer{})
 
 		for u, f := range urlDirs {
@@ -111,6 +122,46 @@ func initFrontend() {
 			http.Handle(j, http.StripPrefix(j, http.FileServer(http.Dir(jsPath()))))
 		}
 	}
+
+	// The modern SPA is served from the root. POST / remains the analysis
+	// endpoint so both UIs use the same API contract.
+	http.Handle("/", &rootServer{dist: distPath()})
+}
+
+// rootServer serves the compiled React app for GET requests and forwards
+// analysis POSTs to the analyzer handler.
+type rootServer struct {
+	dist string
+}
+
+func (s *rootServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	switch r.Method {
+	case "POST":
+		r.ParseForm()
+		analyzer.HTTPAnalyzeHandler(w, r)
+	case "GET", "HEAD":
+		serveSPA(w, r, s.dist)
+	default:
+		http.Error(w, fmt.Sprintf("Method %s not allowed", r.Method), http.StatusMethodNotAllowed)
+	}
+}
+
+// serveSPA serves files from the built SPA directory, falling back to
+// index.html for client-side routed paths. Cleaning the URL before joining
+// prevents path traversal outside dist.
+func serveSPA(w http.ResponseWriter, r *http.Request, dir string) {
+	name := filepath.Clean("/" + r.URL.Path)
+	p := filepath.Join(dir, filepath.FromSlash(name))
+	if info, err := os.Stat(p); err == nil && !info.IsDir() {
+		http.ServeFile(w, r, p)
+		return
+	}
+	index := filepath.Join(dir, "index.html")
+	if _, err := os.Stat(index); err != nil {
+		http.Error(w, "SPA build not found; run `npm run build` in web/ or use /legacy/", http.StatusNotFound)
+		return
+	}
+	http.ServeFile(w, r, index)
 }
 
 func main() {
