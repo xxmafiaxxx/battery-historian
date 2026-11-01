@@ -4,6 +4,7 @@ import { Metric, groupBySeries } from '../data/historianCsv';
 import { formatDuration, formatTime } from '../data/time';
 import { isValidRegExp } from '../data/levelUtils';
 import type { TabConfig } from '../data/historianTabs';
+import { useCollapsible } from './Collapsible';
 
 export interface ParsedLog {
   source: string;
@@ -106,6 +107,7 @@ export function Timeline({ logs, timeZone, tab, domain, onDomainChange, domainKe
   const [hover, setHover] = useState<{ x: number; y: number; text: string[] } | null>(null);
   const [hoverLane, setHoverLane] = useState<string | null>(null);
   const [pinned, setPinned] = useState<string | null>(null);
+  const [colorKeyOpen, setColorKeyOpen] = useCollapsible('color-key', false);
   const dragRef = useRef<{ x: number; min: number; max: number } | null>(null);
 
   const allEntries = useMemo(() => logs.flatMap(l => l.entries), [logs]);
@@ -415,8 +417,13 @@ export function Timeline({ logs, timeZone, tab, domain, onDomainChange, domainKe
         <div className="hint" style={{textAlign:'center', marginTop:4}}>Drag the graph, use wheel/trackpad, or scrub above — ticks every <strong>5 minutes</strong> · wheel pans, Ctrl+wheel zooms</div>
       </div>
 
-      <h4 style={{marginTop:16}}>Color key — what each lane means <span className="chip">{effectiveLanes.length} series</span></h4>
-      <p className="hint">Click the swatch or bar to pin/highlight. Click swatch row to toggle.</p>
+      <div className="card card-collapsible" style={{marginTop:16, border: '1px solid rgba(255,255,255,0.08)'}}>
+        <div className="card-head" role="button" tabIndex={0} onClick={() => setColorKeyOpen(o => !o)} onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setColorKeyOpen(o => !o); } }} aria-expanded={colorKeyOpen} aria-controls="color-key-body" style={{padding: '10px 12px'}}>
+          <h4 style={{margin:0}}>Color key — what each lane means <span className="chip">{effectiveLanes.length} series</span></h4>
+          <span className="collapse-actions"><span className="hint" style={{ fontSize: 11 }}>{colorKeyOpen ? 'hide' : 'show'}</span><button className="collapse-toggle" aria-label={colorKeyOpen ? 'Collapse' : 'Expand'} onClick={e => { e.stopPropagation(); setColorKeyOpen(o => !o); }}>{colorKeyOpen ? '▾' : '▸'}</button></span>
+        </div>
+        <div id="color-key-body" className="collapsible-body" hidden={!colorKeyOpen} style={{padding: '0 12px 12px'}}>
+      <p className="hint" style={{margin: '8px 0'}}>Click the swatch or bar to pin/highlight. Click swatch row to toggle.</p>
       {legendGroups.map(([cat, group]) => (
         <div key={cat} style={{marginBottom:10}}>
           <div className="detail-title" style={{margin:'10px 0 4px'}}>{cat}</div>
@@ -454,6 +461,8 @@ export function Timeline({ logs, timeZone, tab, domain, onDomainChange, domainKe
           ))}
         </div>
       </details>
+        </div>
+      </div>
     </section>
   );
 }
