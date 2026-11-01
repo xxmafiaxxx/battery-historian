@@ -27,8 +27,10 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
+	"sync"
 	"time"
 
+	"github.com/google/battery-historian/bugreportutils"
 	"github.com/google/battery-historian/historianutils"
 )
 
@@ -113,29 +115,50 @@ func AdbBugreportHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	defer os.RemoveAll(dir)
 
-	// Modern adb appends .zip to the destination; pre-7 adb writes plain text
-	// to the exact name. Handle both after the run.
-	dest := filepath.Join(dir, "bugreport")
-	args := []string{"-s", serial, "bugreport", dest}
-	if _, err := runAdb(r, adbBugreportTimeout, args...); err != nil {
-		http.Error(w, fmt.Sprintf("adb bugreport failed for device %q: %v", serial, err), http.StatusInternalServerError)
+	// `adb bugreport <path>`: when <path> is a directory adb writes a
+	// timestamped bugreport-*.zip inside it; when it is a file prefix modern
+	// adb wants to append .zip and on some Windows/driver combos the copy
+	// back to the host fails with "could not be copied to '…bugreport.zip'.
+	// Try to run 'adb pull /data/.../bugreport-*.zip <directory>'".  Pass a
+	// directory so both flows work, and if the first attempt fails try the
+	// suggested `adb pull` using the device path parsed from the error.
+	destDir := dir
+	destPrefix := filepath.Join(dir, "bugreport")
+	var runErr error
+	if _, err := runAdb(r, adbBugreportTimeout, "-s", serial, "bugreport", destDir); err != nil {
+		runErr = err
+		// The error message on newer Android contains the on-device path;
+		// attempt the suggested `adb pull` as a fallback.
+		if devPath := extractDeviceBugreportPath(err.Error()); devPath != "" {
+			if _, pullErr := runAdb(r, 2*time.Minute, "-s", serial, "pull", devPath, destDir); pullErr == nil {
+				runErr = nil
+			} else {
+				runErr = fmt.Errorf("%v; pull fallback also failed: %v", err, pullErr)
+			}
+		}
+	}
+	if runErr != nil {
+		http.Error(w, fmt.Sprintf("adb bugreport failed for device %q: %v", serial, runErr), http.StatusInternalServerError)
 		return
 	}
 
 	found := ""
-	for _, candidate := range []string{dest + ".zip", dest + ".txt", dest} {
-		if info, err := os.Stat(candidate); err == nil && !info.IsDir() && info.Size() > 0 {
-			found = candidate
-			break
+	// Prefer the most recent file in the temp dir (adb writes a timestamped name).
+	matches, _ := filepath.Glob(filepath.Join(destDir, "*"))
+	var bestTime time.Time
+	for _, m := range matches {
+		if info, err := os.Stat(m); err == nil && !info.IsDir() && info.Size() > 0 {
+			if info.ModTime().After(bestTime) {
+				bestTime = info.ModTime()
+				found = m
+			}
 		}
 	}
 	if found == "" {
-		// Last resort: adb may have written with a timestamped name into dest's
-		// directory.
-		matches, _ := filepath.Glob(filepath.Join(dir, "bugreport*"))
-		for _, m := range matches {
-			if info, err := os.Stat(m); err == nil && !info.IsDir() && info.Size() > 0 {
-				found = m
+		// Extremely old adb that wrote to the exact prefix (no zip) — check prefix too.
+		for _, candidate := range []string{destPrefix + ".zip", destPrefix + ".txt", destPrefix} {
+			if info, err := os.Stat(candidate); err == nil && !info.IsDir() && info.Size() > 0 {
+				found = candidate
 				break
 			}
 		}
@@ -151,11 +174,23 @@ func AdbBugreportHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Modern `adb bugreport` produces a zip; the analysis pipeline needs the
+	// extracted main entry (the upload path does the same via bugreportutils).
+	name := filepath.Base(found)
+	entry, entryName, err := bugreportutils.ExtractBugReport(name, contents)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("the pulled file %q did not contain a recognizable bug report (check that USB debugging is fully authorized): %v", name, err), http.StatusInternalServerError)
+		return
+	}
+
+	// Remember the raw pulled file so the UI can offer "save to computer".
+	storeLastReport(name, contents)
+
 	files := map[string]UploadedFile{
 		bugreportFT: {
 			FileType: bugreportFT,
-			FileName: filepath.Base(found),
-			Contents: contents,
+			FileName: entryName,
+			Contents: []byte(entry),
 		},
 	}
 	AnalyzeAndResponse(w, r, files)
@@ -177,4 +212,56 @@ func runAdb(r *http.Request, timeout time.Duration, args ...string) (string, err
 		return "", err
 	}
 	return out, nil
+}
+
+// lastPulledReport keeps the most recently pulled raw bug report so the UI
+// can offer a "save to computer" download.
+var lastPulledReport struct {
+	mu   sync.Mutex
+	name string
+	data []byte
+}
+
+func storeLastReport(name string, data []byte) {
+	lastPulledReport.mu.Lock()
+	defer lastPulledReport.mu.Unlock()
+	lastPulledReport.name = name
+	cp := make([]byte, len(data))
+	copy(cp, data)
+	lastPulledReport.data = cp
+}
+
+// extractDeviceBugreportPath pulls the on-device /data/.../bugreport-*.zip
+// path out of the "Try to run 'adb pull /data/... <directory>'" hint that
+// modern adb prints when the host copy fails.
+func extractDeviceBugreportPath(msg string) string {
+	// Look for "/data/…bugreport…zip" in the error text.
+	for _, f := range strings.Fields(msg) {
+		if strings.HasPrefix(f, "/data/") && strings.Contains(f, "bugreport") {
+			// Trim trailing punctuation the shell error may attach.
+			f = strings.Trim(f, "'\".,;")
+			return f
+		}
+	}
+	// Fallback: regex for the pull hint.
+	re := regexp.MustCompile(`/data/[^\s'"]+bugreport[^\s'"]*\.zip`)
+	if m := re.FindString(msg); m != "" {
+		return m
+	}
+	return ""
+}
+
+// AdbLastReportHandler serves the most recently pulled raw bug report as a
+// download. 404s when nothing has been pulled yet in this server's lifetime.
+func AdbLastReportHandler(w http.ResponseWriter, r *http.Request) {
+	lastPulledReport.mu.Lock()
+	name, data := lastPulledReport.name, lastPulledReport.data
+	lastPulledReport.mu.Unlock()
+	if len(data) == 0 {
+		http.Error(w, "no bug report has been pulled yet", http.StatusNotFound)
+		return
+	}
+	w.Header().Set("Content-Type", "application/octet-stream")
+	w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=%q", name))
+	w.Write(data)
 }

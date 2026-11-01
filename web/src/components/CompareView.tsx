@@ -4,7 +4,7 @@ import { formatDuration, formatMah, describeBytes } from '../data/time';
 
 /** A/B comparison view, replacing the legacy compare templates + Flot charts. */
 export function CompareView({ data }: { data: UploadResponseCompare }) {
-  const [left, right] = data.UploadResponse;
+  const [left, right] = data.UploadResponse ?? [];
   return (
     <div className="analysis">
       <section className="report-head">
@@ -20,14 +20,14 @@ export function CompareView({ data }: { data: UploadResponseCompare }) {
       {left?.note && <div className="banner banner-warn">A: {left.note}</div>}
       {right?.note && <div className="banner banner-warn">B: {right.note}</div>}
 
-      <DiffSection title="Device power estimates" data={data.CombinedCheckin.DevicePowerEstimatesCombined} renderPower />
-      <DiffSection title="Userspace wakelocks" data={data.CombinedCheckin.UserspaceWakelocksCombined} renderDuration />
-      <DiffSection title="Kernel wakelocks" data={data.CombinedCheckin.KernelWakelocksCombined} renderDuration />
-      <DiffSection title="Wakeup reasons" data={data.CombinedCheckin.WakeupReasonsCombined} renderDuration />
-      <DiffSection title="Sync tasks" data={data.CombinedCheckin.SyncTasksCombined} renderDuration />
-      <DiffSection title="App wakeups (alarms)" data={data.CombinedCheckin.AppWakeupsCombined} renderRate />
-      <TrafficSection title="Top mobile traffic apps" data={data.CombinedCheckin.TopMobileTrafficAppsCombined} />
-      <TrafficSection title="Top Wi-Fi traffic apps" data={data.CombinedCheckin.TopWifiTrafficAppsCombined} />
+      <DiffSection title="Device power estimates" data={data.CombinedCheckin.DevicePowerEstimatesCombined ?? []} renderPower />
+      <DiffSection title="Userspace wakelocks" data={data.CombinedCheckin.UserspaceWakelocksCombined ?? []} renderDuration />
+      <DiffSection title="Kernel wakelocks" data={data.CombinedCheckin.KernelWakelocksCombined ?? []} renderDuration />
+      <DiffSection title="Wakeup reasons" data={data.CombinedCheckin.WakeupReasonsCombined ?? []} renderDuration />
+      <DiffSection title="Sync tasks" data={data.CombinedCheckin.SyncTasksCombined ?? []} renderDuration />
+      <DiffSection title="App wakeups (alarms)" data={data.CombinedCheckin.AppWakeupsCombined ?? []} renderRate />
+      <TrafficSection title="Top mobile traffic apps" data={data.CombinedCheckin.TopMobileTrafficAppsCombined ?? []} />
+      <TrafficSection title="Top Wi-Fi traffic apps" data={data.CombinedCheckin.TopWifiTrafficAppsCombined ?? []} />
     </div>
   );
 }

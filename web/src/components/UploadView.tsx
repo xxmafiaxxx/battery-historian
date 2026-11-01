@@ -1,7 +1,8 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { FormEvent } from 'react';
 import { listAdbDevices } from '../api/client';
 import type { AdbDevice } from '../api/types';
+import { click } from '../sound';
 
 interface Props {
   onSubmit: (input: {
@@ -16,9 +17,9 @@ interface Props {
 }
 
 /**
- * Upload form matching the multipart contract of analyzer.HTTPAnalyzeHandler:
- * parts named "bugreport" (required), "bugreport2", "kernel", "powermonitor".
- * Devices connected over USB can be pulled directly with `adb bugreport`.
+ * Upload form matching the multipart contract of analyzer.HTTPAnalyzeHandler
+ * (parts "bugreport"/"bugreport2"/"kernel"/"powermonitor"), plus one-click
+ * `adb bugreport` pull from a connected phone.
  */
 export function UploadView({ onSubmit, onPull, busy, error }: Props) {
   const [compare, setCompare] = useState(false);
@@ -31,6 +32,34 @@ export function UploadView({ onSubmit, onPull, busy, error }: Props) {
   const bugreport2Ref = useRef<HTMLInputElement>(null);
   const kernelRef = useRef<HTMLInputElement>(null);
   const powermonitorRef = useRef<HTMLInputElement>(null);
+
+  const detect = async (silent: boolean) => {
+    setDetecting(true);
+    if (!silent) {
+      setDeviceError('');
+    }
+    try {
+      const list = await listAdbDevices();
+      setDevices(list);
+      const usable = list.find(d => d.state === 'device');
+      setSelectedSerial(prev => (usable ? usable.serial : prev));
+      if (list.length === 0 && !silent) {
+        setDeviceError('No devices found. Connect a phone over USB with USB debugging enabled, then re-check.');
+      }
+    } catch (e) {
+      if (!silent) {
+        setDeviceError(e instanceof Error ? e.message : String(e));
+      }
+    } finally {
+      setDetecting(false);
+    }
+  };
+
+  // Auto-detect on mount so a plugged-in phone is ready without a click.
+  useEffect(() => {
+    void detect(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const submit = (e: FormEvent) => {
     e.preventDefault();
@@ -46,28 +75,11 @@ export function UploadView({ onSubmit, onPull, busy, error }: Props) {
     });
   };
 
-  const detectDevices = async () => {
-    setDetecting(true);
-    setDeviceError('');
-    try {
-      const list = await listAdbDevices();
-      setDevices(list);
-      const usable = list.find(d => d.state === 'device');
-      setSelectedSerial(usable?.serial ?? '');
-      if (list.length === 0) {
-        setDeviceError('No devices found. Connect a phone over USB with USB debugging enabled, then re-check.');
-      }
-    } catch (e) {
-      setDeviceError(e instanceof Error ? e.message : String(e));
-    } finally {
-      setDetecting(false);
-    }
-  };
-
   const pull = async () => {
     if (!selectedSerial || pulling) {
       return;
     }
+    click();
     setPulling(true);
     setDeviceError('');
     try {
@@ -80,39 +92,47 @@ export function UploadView({ onSubmit, onPull, busy, error }: Props) {
   };
 
   const pullable = devices?.filter(d => d.state === 'device') ?? [];
+  const other = devices?.filter(d => d.state !== 'device') ?? [];
 
   return (
     <form className="upload-card" onSubmit={submit}>
       <section className="adb-section">
-        <h3>Pull from a connected phone</h3>
+        <h3>
+          <span className="pulse-dot" aria-hidden /> Pull from a connected phone
+        </h3>
         <p className="hint">
-          Runs <code>adb bugreport</code> on the device (same as
-          running it yourself) and analyzes the result directly. Enable USB
-          debugging first.
+          Runs <code>adb bugreport</code> on the device (same as running it yourself) and analyzes
+          the result directly. Enable USB debugging first — accept the prompt on the phone.
         </p>
         <div className="adb-row">
-          <button type="button" className="btn" onClick={detectDevices} disabled={detecting || pulling}>
+          <button type="button" className="btn" onClick={() => detect(false)} disabled={detecting || pulling}>
             {detecting ? 'Checking…' : devices === null ? 'Detect devices' : 'Re-check devices'}
           </button>
-          {devices !== null && pullable.length > 0 && (
-            <select value={selectedSerial} onChange={e => setSelectedSerial(e.target.value)}>
-              {pullable.map(d => (
-                <option key={d.serial} value={d.serial}>
-                  {d.model ? `${d.model} (${d.serial})` : d.serial}
-                </option>
-              ))}
-            </select>
-          )}
-          {devices !== null && pullable.length > 0 && (
-            <button type="button" className="btn btn-primary" onClick={pull} disabled={!selectedSerial || pulling || busy}>
-              {pulling ? 'Running adb bugreport… (this can take a few minutes)' : 'Pull bugreport & analyze'}
-            </button>
+          {pullable.length > 0 && (
+            <>
+              <select value={selectedSerial} onChange={e => setSelectedSerial(e.target.value)}>
+                {pullable.map(d => (
+                  <option key={d.serial} value={d.serial}>
+                    {d.model ? `${d.model} (${d.serial})` : d.serial}
+                  </option>
+                ))}
+              </select>
+              <button
+                type="button"
+                className="btn btn-primary btn-pull"
+                onClick={pull}
+                disabled={!selectedSerial || pulling || busy}
+              >
+                {pulling ? '⏳ Running adb bugreport… (can take a few minutes)' : '⚡ Pull bugreport & analyze'}
+              </button>
+            </>
           )}
         </div>
-        {devices !== null && devices.some(d => d.state !== 'device') && (
-          <p className="hint">
-            {devices.filter(d => d.state !== 'device').map(d => `${d.serial}: ${d.state}`).join(', ')} — authorize the
-            debugging prompt on the phone to use it.
+        {devices !== null && pullable.length === 0 && !detecting && (
+          <p className="hint device-hint">
+            {other.length > 0
+              ? `${other.map(d => `${d.serial}: ${d.state}`).join(', ')} — unlock the phone and accept the debugging prompt.`
+              : 'No devices found. Plug the phone in over USB and enable USB debugging.'}
           </p>
         )}
         {deviceError && <div className="banner banner-warn">{deviceError}</div>}

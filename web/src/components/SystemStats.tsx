@@ -1,6 +1,7 @@
 import type { BatteryStatsSystem, CheckinSummary, PowerUseItem } from '../api/types';
 import { formatDuration, formatMah, describeBytes } from '../data/time';
 import { CheckinSummaryTable } from './CheckinSummaryTable';
+import { PowerChart } from './PowerChart';
 
 /** Enum values of BatteryStats_System_PowerUseItem_Name (pb/batterystats_proto). */
 const POWER_USE_ITEM_NAMES: Record<number, string> = {
@@ -21,9 +22,9 @@ const POWER_USE_ITEM_NAMES: Record<number, string> = {
 export function SystemStats({ stats, checkin }: { stats: BatteryStatsSystem | null; checkin?: CheckinSummary | null }) {
   if (!stats) {
     return (
-      <section className="card">
+      <section className="card" id="system-stats">
         <h3>System stats</h3>
-        <p className="empty">No aggregated battery stats were parsed for this report.</p>
+        <p className="empty">No aggregated battery stats were parsed for this report. Try a full <code>adb bugreport</code> zip — the checkin section may have been truncated.</p>
       </section>
     );
   }
@@ -33,8 +34,7 @@ export function SystemStats({ stats, checkin }: { stats: BatteryStatsSystem | nu
   const battery = stats.battery;
 
   return (
-    <section className="card">
-      <h3>System stats</h3>
+    <section className="card" id="system-stats">
       {checkin && <CheckinSummaryTable cs={checkin} />}
       {battery && (
         <div className="meta-row">
@@ -45,12 +45,12 @@ export function SystemStats({ stats, checkin }: { stats: BatteryStatsSystem | nu
         </div>
       )}
 
+      <PowerChart items={stats.power_use_item ?? []} />
       <table className="data-table">
         <thead>
           <tr>
             <th>Power use</th>
             <th>Computed</th>
-            <th>Share</th>
           </tr>
         </thead>
         <tbody>
@@ -58,13 +58,11 @@ export function SystemStats({ stats, checkin }: { stats: BatteryStatsSystem | nu
             <tr key={i} className={it.name === 9 ? 'row-warn' : undefined}>
               <td>{itemLabel(it, items)}</td>
               <td>{formatMah(it.computed_power_mah)}</td>
-              <td>{total > 0 && it.computed_power_mah ? `${Math.round((it.computed_power_mah / total) * 100)}%` : '—'}</td>
             </tr>
           ))}
           <tr className="row-total">
             <td>Total</td>
             <td>{formatMah(total)}</td>
-            <td>{stats.power_use_summary ? `min ${formatMah(stats.power_use_summary.min_drained_power_mah)} / max ${formatMah(stats.power_use_summary.max_drained_power_mah)}` : '—'}</td>
           </tr>
         </tbody>
       </table>

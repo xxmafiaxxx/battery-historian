@@ -2038,10 +2038,24 @@ func parseAppWifi(record []string, app *bspb.BatteryStats_App) (string, []error)
 //
 // format: <idle_time>, <rx_time>, <power_ma_ms>, tx_time...
 func parseControllerData(pc checkinutil.Counter, section string, record []string) (*bspb.BatteryStats_ControllerActivity, error) {
-	var idle, rx, pwr int64
-	rem, err := parseSlice(pc, section, record, &idle, &rx, &pwr)
+	// Values may carry decimal fractions on modern BatteryStats; consume as
+	// strings and parse tolerantly.
+	var idleS, rxS, pwrS string
+	rem, err := parseSlice(pc, section, record, &idleS, &rxS, &pwrS)
 	if err != nil {
 		return nil, err
+	}
+	idle, err := parseIntLoose(idleS)
+	if err != nil {
+		return nil, fmt.Errorf("%s contained invalid idle value: %v", section, err)
+	}
+	rx, err := parseIntLoose(rxS)
+	if err != nil {
+		return nil, fmt.Errorf("%s contained invalid rx value: %v", section, err)
+	}
+	pwr, err := parseIntLoose(pwrS)
+	if err != nil {
+		return nil, fmt.Errorf("%s contained invalid power value: %v", section, err)
 	}
 	if len(rem) == 0 {
 		return nil, fmt.Errorf(`%s didn't contain any transmit level data: "%v"`, section, record)
@@ -2052,16 +2066,32 @@ func parseControllerData(pc checkinutil.Counter, section string, record []string
 		PowerMah:     proto.Int64(pwr),
 	}
 	for i, t := range rem {
-		tm, err := strconv.Atoi(t)
+		// Modern BatteryStats prints controller durations and power with
+		// decimal fractions (e.g. "0.0"); truncate rather than fail.
+		tm, err := parseIntLoose(t)
 		if err != nil {
 			return nil, fmt.Errorf("%s contained invalid transmit value: %v", section, err)
 		}
 		c.Tx = append(c.Tx, &bspb.BatteryStats_ControllerActivity_TxLevel{
 			Level:    proto.Int32(int32(i)),
-			TimeMsec: proto.Int64(int64(tm)),
+			TimeMsec: proto.Int64(tm),
 		})
 	}
 	return c, nil
+}
+
+// parseIntLoose parses an integer that may be printed with a decimal
+// fraction (modern BatteryStats emits values like "3205.0"); the fraction
+// is truncated.
+func parseIntLoose(s string) (int64, error) {
+	if v, err := strconv.ParseInt(s, 10, 64); err == nil {
+		return v, nil
+	}
+	f, err := strconv.ParseFloat(s, 64)
+	if err != nil {
+		return 0, err
+	}
+	return int64(f), nil
 }
 
 // parseAndAccumulateControllerData parses any output that describes controller activity and

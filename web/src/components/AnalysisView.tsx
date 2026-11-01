@@ -8,19 +8,29 @@ import { SystemStats } from './SystemStats';
 import { AppStats } from './AppStats';
 import { LevelSummaryTable } from './LevelSummaryTable';
 import { Timeline } from './Timeline';
+import { LevelChart } from './LevelChart';
+import { formatMah } from '../data/time';
 
 export function AnalysisView({ data }: { data: UploadResponse }) {
   const tz = data.location || 'UTC';
 
+  // Go nil slices marshal as null; never assume arrays from the wire.
+  const appStats = data.appStats ?? [];
+  const logs = data.historianV2Logs ?? [];
+  const levelCsv = data.levelSummaryCsv ?? '';
+
   const parsedLogs = useMemo(
     () =>
-      data.historianV2Logs
+      logs
         .filter(l => l.csv && l.csv.trim() !== '')
         .map(l => ({ source: l.source, startMs: l.startMs, ...parseHistorianCsv(l.csv, l.source) })),
-    [data.historianV2Logs],
+    [logs],
   );
 
   const totalEntries = parsedLogs.reduce((n, l) => n + l.entries.length, 0);
+  const levelEntries = parsedLogs
+    .flatMap(l => l.entries)
+    .filter(e => e.seriesName === 'Battery Level');
   const battery = data.batteryStats?.system?.battery ?? null;
   const timeOnBattery = battery?.battery_realtime_msec ?? 0;
 
@@ -40,6 +50,32 @@ export function AnalysisView({ data }: { data: UploadResponse }) {
       {data.criticalError && <div className="banner banner-error">{data.criticalError}</div>}
       {data.note && <div className="banner banner-warn">{data.note}</div>}
 
+      <section className="stat-tiles">
+        <div className="tile tile-blue">
+          <div className="tile-label">Time on battery</div>
+          <div className="tile-value">{timeOnBattery > 0 ? formatDuration(timeOnBattery) : '—'}</div>
+        </div>
+        <div className="tile tile-green">
+          <div className="tile-label">Est. capacity</div>
+          <div className="tile-value">{battery?.estimated_battery_capacity_mah ? `${Math.round(battery.estimated_battery_capacity_mah)} mAh` : formatMah(data.deviceCapacity || undefined)}</div>
+        </div>
+        <div className="tile tile-amber">
+          <div className="tile-label">Screen on</div>
+          <div className="tile-value">{data.checkinSummary?.ScreenOnTimePercentage ? `${Math.round(data.checkinSummary.ScreenOnTimePercentage)}%` : '—'}</div>
+        </div>
+        <div className="tile tile-purple">
+          <div className="tile-label">Discharge (screen off)</div>
+          <div className="tile-value">{data.checkinSummary?.ScreenOffDischargeRatePerHr?.V ? `${Math.round(data.checkinSummary.ScreenOffDischargeRatePerHr.V * 10) / 10}%/hr` : '—'}</div>
+        </div>
+      </section>
+
+      {levelEntries.length > 1 && (
+        <section className="card">
+          <h3>Battery level</h3>
+          <LevelChart entries={levelEntries} timeZone={tz} />
+        </section>
+      )}
+
       {parsedLogs.some(l => l.entries.length > 0) ? (
         <Timeline logs={parsedLogs} timeZone={tz} />
       ) : (
@@ -48,16 +84,28 @@ export function AnalysisView({ data }: { data: UploadResponse }) {
         )
       )}
 
-      <section className="card">
+      <nav className="analysis-jump" aria-label="Sections">
+        <a href="#timeline">Timeline</a>
+        <a href="#level-summary">Level summary</a>
+        <a href="#system-stats">System stats {data.checkinSummary ? `· ${data.checkinSummary.ReportVersion ? `v${data.checkinSummary.ReportVersion}` : ''}` : ''}</a>
+        <a href="#app-stats">App stats · {appStats.length} apps</a>
+        <a href="#historian-logs">Logs · {totalEntries} events</a>
+      </nav>
+
+      <section className="card" id="level-summary">
         <h3>Battery level summaries</h3>
-        <LevelSummaryTable summary={parseLevelSummary(data.levelSummaryCsv)} />
+        <LevelSummaryTable summary={parseLevelSummary(levelCsv)} />
       </section>
 
-      <SystemStats stats={data.batteryStats?.system ?? null} checkin={data.checkinSummary} />
+      <div id="system-stats">
+        <SystemStats stats={data.batteryStats?.system ?? null} checkin={data.checkinSummary} />
+      </div>
 
-      <AppStats appStats={data.appStats} />
+      <div id="app-stats">
+        <AppStats appStats={appStats} />
+      </div>
 
-      <section className="card">
+      <section className="card" id="historian-logs">
         <h3>
           Historian logs <span className="chip">{totalEntries} entries</span>
         </h3>
@@ -68,7 +116,7 @@ export function AnalysisView({ data }: { data: UploadResponse }) {
               {l.entries.length > 0 && (
                 <button
                   className="btn btn-small"
-                  onClick={() => downloadText(`${l.source.replace(/\s+/g, '_')}.csv`, data.historianV2Logs.find(x => x.source === l.source)?.csv ?? '')}
+                  onClick={() => downloadText(`${l.source.replace(/\s+/g, '_')}.csv`, (data.historianV2Logs ?? []).find(x => x.source === l.source)?.csv ?? '')}
                 >
                   download CSV
                 </button>

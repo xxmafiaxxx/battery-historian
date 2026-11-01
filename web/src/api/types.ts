@@ -184,7 +184,13 @@ export interface ResourcePowerManager {
 
 export interface BatteryStatsApp {
   uid?: number;
-  name?: string[];
+  // Wire is `name` (lowercase, from proto json tags) but be tolerant of both.
+  name?: string | string[];
+  Name?: string | string[];
+  version_code?: number;
+  version_name?: string;
+  child?: { name?: string; version_code?: number; version_name?: string }[];
+  head_child?: { name?: string; version_code?: number; version_name?: string } | null;
   apk?: {
     wakeups?: number;
     service?: { name?: string; wakeups?: number }[];
@@ -204,7 +210,7 @@ export interface BatteryStatsApp {
   }[];
   sensor?: { number?: number; total_time_msec?: number; count?: number; report_mode?: string }[];
   state_time?: { foreground_time_msec?: number; top_time_msec?: number; foreground_service_time_msec?: number; cached_time_msec?: number };
-  cpu?: { user_time_msec?: number; system_time_msec?: number };
+  cpu?: { user_time_msec?: number; system_time_msec?: number; power_ma_ms?: number };
   network?: AppNetwork | null;
   user_activity?: unknown[];
   vibration?: { total_time_msec?: number; count?: number } | null;
