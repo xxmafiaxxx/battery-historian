@@ -145,6 +145,10 @@ func (s *rootServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		analyzer.AdbBugreportHandler(w, r)
 		return
 	}
+	if r.URL.Path == "/api/adb/fallback" && r.Method == "POST" {
+		analyzer.AdbFallbackHandler(w, r)
+		return
+	}
 	if r.URL.Path == "/api/adb/last-report" && r.Method == "GET" {
 		analyzer.AdbLastReportHandler(w, r)
 		return

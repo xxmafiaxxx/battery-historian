@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import type { FormEvent } from 'react';
-import { listAdbDevices } from '../api/client';
+import { listAdbDevices, pullBugreportFallback } from '../api/client';
 import type { AdbDevice } from '../api/types';
 import { click } from '../sound';
 
@@ -12,6 +12,7 @@ interface Props {
     powermonitor?: File | null;
   }) => void | Promise<void>;
   onPull: (serial: string) => void | Promise<void>;
+  onFallbackPull?: (serial: string, result: any) => void;
   busy: boolean;
   error: string;
 }
@@ -21,12 +22,13 @@ interface Props {
  * (parts "bugreport"/"bugreport2"/"kernel"/"powermonitor"), plus one-click
  * `adb bugreport` pull from a connected phone.
  */
-export function UploadView({ onSubmit, onPull, busy, error }: Props) {
+export function UploadView({ onSubmit, onPull, onFallbackPull, busy, error }: Props) {
   const [compare, setCompare] = useState(false);
   const [devices, setDevices] = useState<AdbDevice[] | null>(null);
   const [deviceError, setDeviceError] = useState('');
   const [detecting, setDetecting] = useState(false);
   const [pulling, setPulling] = useState(false);
+  const [fallbackBusy, setFallbackBusy] = useState(false);
   const [selectedSerial, setSelectedSerial] = useState('');
   const bugreportRef = useRef<HTMLInputElement>(null);
   const bugreport2Ref = useRef<HTMLInputElement>(null);
@@ -91,6 +93,23 @@ export function UploadView({ onSubmit, onPull, busy, error }: Props) {
     }
   };
 
+  const pullFallback = async () => {
+    if (!selectedSerial || fallbackBusy) return;
+    click();
+    setFallbackBusy(true);
+    setDeviceError('');
+    try {
+      const res = await pullBugreportFallback(selectedSerial);
+      if (onFallbackPull) {
+        onFallbackPull(selectedSerial, res as any);
+      }
+    } catch (e) {
+      setDeviceError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setFallbackBusy(false);
+    }
+  };
+
   const pullable = devices?.filter(d => d.state === 'device') ?? [];
   const other = devices?.filter(d => d.state !== 'device') ?? [];
 
@@ -135,7 +154,22 @@ export function UploadView({ onSubmit, onPull, busy, error }: Props) {
               : 'No devices found. Plug the phone in over USB and enable USB debugging.'}
           </p>
         )}
-        {deviceError && <div className="banner banner-warn">{deviceError}</div>}
+        {deviceError && (
+          <div className="banner banner-warn" style={{ whiteSpace: 'pre-wrap' }}>
+            {deviceError}
+            {deviceError.toLowerCase().includes('dumpstatez') || deviceError.toLowerCase().includes('dumpstate') ? (
+              <div style={{ marginTop: 10, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                <button type="button" className="btn" onClick={pull} disabled={pulling || fallbackBusy}>
+                  ↻ Retry bugreport
+                </button>
+                <button type="button" className="btn btn-primary" onClick={pullFallback} disabled={fallbackBusy || pulling || busy}>
+                  {fallbackBusy ? 'Collecting…' : '⚡ Collect lightweight dump (no zip)'}
+                </button>
+                <span className="hint" style={{ alignSelf: 'center' }}>Fallback uses dumpsys batterystats directly — partial report, no reboot needed.</span>
+              </div>
+            ) : null}
+          </div>
+        )}
       </section>
 
       <div className="divider">or upload a file</div>

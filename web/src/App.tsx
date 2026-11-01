@@ -65,6 +65,21 @@ export default function App() {
     }
   };
 
+  const onFallbackPull = async (_serial: string, res: any) => {
+    setBusy(true);
+    setError('');
+    click();
+    try {
+      if (res && 'single' in res) finish(res as { single: UploadResponse });
+      else if (res && res.compare) finish({ compare: res.compare as unknown as UploadResponseCompare });
+      else finish(res);
+      setSourceFile(null);
+      setPulled(true);
+    } finally {
+      setBusy(false);
+    }
+  };
+
   const reset = () => {
     click();
     setResult(null);
@@ -95,7 +110,7 @@ export default function App() {
         </p>
       </header>
       {result === null ? (
-        <UploadView onSubmit={onSubmit} onPull={onPull} busy={busy} error={error} />
+        <UploadView onSubmit={onSubmit} onPull={onPull} onFallbackPull={onFallbackPull} busy={busy} error={error} />
       ) : (
         <>
           <div className="toolbar">

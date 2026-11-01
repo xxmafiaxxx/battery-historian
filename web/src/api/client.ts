@@ -1,5 +1,28 @@
 import type { AdbDevice, UploadResponse, UploadResponseCompare } from './types';
 
+/**
+ * Lightweight fallback when `adb bugreport`'s dumpstatez service is down.
+ * Collects `dumpsys batterystats --checkin` etc directly and analyzes that
+ * (POST /api/adb/fallback). Still gives System/App stats + timeline.
+ */
+export async function pullBugreportFallback(serial: string): Promise<{ single: UploadResponse } | { compare: UploadResponseCompare }> {
+  const res = await fetch(`/api/adb/fallback?serial=${encodeURIComponent(serial)}`, { method: 'POST' });
+  if (!res.ok) {
+    throw new Error(await res.text());
+  }
+  const body: unknown = await res.json();
+  if (isCompare(body)) {
+    if (body.UploadResponse.length === 1) {
+      const single = body.UploadResponse[0];
+      if (single) {
+        return { single };
+      }
+    }
+    return { compare: body };
+  }
+  return { single: body as UploadResponse };
+}
+
 /** Lists Android devices visible to adb (GET /api/adb/devices). */
 export async function listAdbDevices(): Promise<AdbDevice[]> {
   const res = await fetch('/api/adb/devices');
