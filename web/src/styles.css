@@ -707,3 +707,10 @@ input[type='file'] {
 .htb-field select:focus,.htb-field input:focus{ border-color:rgba(96,165,250,0.5); box-shadow:0 0 0 2px rgba(96,165,250,0.15); }
 .htb-check{ display:flex; gap:6px; align-items:center; font-size:13px; color:var(--ink); cursor:pointer; user-select:none; }
 .htb-check input{ accent-color:var(--blue-deep); }
+
+/* timeline 5-min scroller */
+.timeline-scroller{ margin:10px 0 4px; padding:10px 12px; border:1px solid var(--card-border); border-radius:10px; background:rgba(255,255,255,0.03); }
+.scroller-btns{ display:flex; flex-wrap:wrap; gap:6px; justify-content:center; margin-bottom:8px; }
+.scroller-range-row{ display:flex; align-items:center; gap:10px; }
+.scroller-range{ flex:1; accent-color:var(--blue-deep); height:6px; cursor:pointer; }
+.level-chart-scroll-hint{ text-align:center; margin-top:6px; }

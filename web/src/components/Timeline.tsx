@@ -204,15 +204,38 @@ export function Timeline({ logs, timeZone, tab, domain, onDomainChange, domainKe
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       ctx.clearRect(0, 0, width, height);
       const x = (t: number) => MARGIN.left + ((t - effDomain.min) / (effDomain.max - effDomain.min)) * (width - MARGIN.left - MARGIN.right);
-      const t = (px: number) => effDomain.min + ((px - MARGIN.left) / (width - MARGIN.left - MARGIN.right)) * (effDomain.max - effDomain.min);
-      ctx.font = '11px system-ui, sans-serif';
-      ctx.fillStyle = '#93a0b8'; ctx.strokeStyle = '#1e293b';
-      for (let i = 0; i <= 5; i++) {
-        const px = MARGIN.left + ((width - MARGIN.left - MARGIN.right) * i) / 5;
-        const time = t(px);
+      // 5-minute interval grid — minor every 5m, major hour labels
+      const FIVE_MIN = 5 * 60 * 1000;
+      const HOUR = 60 * 60 * 1000;
+      const startTick = Math.floor(effDomain.min / FIVE_MIN) * FIVE_MIN;
+      const endTick = Math.ceil(effDomain.max / FIVE_MIN) * FIVE_MIN;
+      const spanMs = effDomain.max - effDomain.min;
+      // Adapt label density: wide spans would make 5m labels collide — expand step
+      let labelStep = FIVE_MIN * 6; // 30m default
+      if (spanMs > 8 * HOUR) labelStep = HOUR;
+      else if (spanMs < 90 * 60 * 1000) labelStep = FIVE_MIN * 2; // 10m when zoomed in
+      else if (spanMs < 40 * 60 * 1000) labelStep = FIVE_MIN; // 5m labels only when <40m window
+      for (let tm = startTick; tm <= endTick; tm += FIVE_MIN) {
+        const px = x(tm);
+        if (px < MARGIN.left - 1 || px > width - MARGIN.right + 1) continue;
+        const isHour = tm % HOUR === 0;
+        const isLabel = tm % labelStep === 0;
+        // minor vs major stroke
+        ctx.strokeStyle = isHour ? '#2a3a5c' : '#1e293b';
+        ctx.lineWidth = isHour ? 1 : 0.5;
+        ctx.globalAlpha = isHour ? 1 : 0.6;
         ctx.beginPath(); ctx.moveTo(px, MARGIN.top); ctx.lineTo(px, height - MARGIN.bottom); ctx.stroke();
-        ctx.textAlign = i === 0 ? 'left' : i === 5 ? 'right' : 'center';
-        ctx.fillText(formatTime(time, timeZone), px, height - 8);
+        ctx.globalAlpha = 1; ctx.lineWidth = 1;
+        if (isLabel) {
+          const lbl = formatTime(tm, timeZone);
+          // avoid drawing labels that would overlap edges
+          if (px - MARGIN.left > 28 && width - MARGIN.right - px > 28) {
+            ctx.fillStyle = isHour ? '#c7d2e8' : '#93a0b8';
+            ctx.font = isHour ? '600 11px system-ui, sans-serif' : '11px system-ui, sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText(lbl, px, height - 8);
+          }
+        }
       }
       visibleLanes.forEach((lane, li) => {
         const y = MARGIN.top + li * (LANE_HEIGHT + LANE_GAP);
@@ -276,12 +299,22 @@ export function Timeline({ logs, timeZone, tab, domain, onDomainChange, domainKe
           className="timeline-canvas"
           onWheel={e => {
             e.preventDefault();
-            const { time } = xToTime(e.clientX);
-            const factor = e.deltaY < 0 ? 0.8 : 1.25;
-            let min = time - (time - effDomain.min) * factor;
-            let max = time + (effDomain.max - time) * factor;
-            if (max - min > (bounds.max - bounds.min) * 1.02) { min = bounds.min; max = bounds.max; }
-            onDomainChange({ min, max });
+            const hasCtrl = (e as unknown as { ctrlKey?: boolean; metaKey?: boolean }).ctrlKey || (e as unknown as { ctrlKey?: boolean; metaKey?: boolean }).metaKey;
+            if (hasCtrl) {
+              const { time } = xToTime(e.clientX);
+              const factor = e.deltaY < 0 ? 0.8 : 1.25;
+              let min = time - (time - effDomain.min) * factor;
+              let max = time + (effDomain.max - time) * factor;
+              if (max - min > (bounds.max - bounds.min) * 1.02) { min = bounds.min; max = bounds.max; }
+              onDomainChange({ min, max });
+              return;
+            }
+            // Pan: wheel/trackpad scroll moves time backwards/forwards
+            const rect = canvasRef.current?.getBoundingClientRect();
+            const w = (rect?.width ?? 1) - MARGIN.left - MARGIN.right;
+            const span = effDomain.max - effDomain.min;
+            const deltaMs = ((e.deltaX !== 0 ? e.deltaX : e.deltaY) / Math.max(1, w)) * span * 0.6;
+            onDomainChange({ min: effDomain.min + deltaMs, max: effDomain.max + deltaMs });
           }}
           onMouseDown={e => { dragRef.current = { x: e.clientX, min: effDomain.min, max: effDomain.max }; }}
           onMouseUp={() => { dragRef.current = null; }}
@@ -344,6 +377,43 @@ export function Timeline({ logs, timeZone, tab, domain, onDomainChange, domainKe
       </div>
       {pinned && <p className="hint" style={{ margin: '6px 0 0' }}>Pinned: <strong>{pinned}</strong> — click again to unpin. {domainKey !== 'Default' ? `Domain: ${domainKey}` : ''}</p>}
       {regexp && <p className="hint" style={{ margin: '4px 0 0' }}>Regexp: <code>{regexp}</code> {regexpFilteredLanes ? `· ${visibleLanes.reduce((n,l)=>n+l.entries.length,0)} matches` : '· invalid'}</p>}
+
+      {/* Time scroller: step backwards/forwards + scrub */}
+      <div className="timeline-scroller">
+        <div className="scroller-btns">
+          <button className="btn btn-small" onClick={() => onDomainChange({ min: effDomain.min - 15*60*1000, max: effDomain.max - 15*60*1000 })} title="Back 15 minutes">◀ 15m</button>
+          <button className="btn btn-small" onClick={() => onDomainChange({ min: effDomain.min - 5*60*1000, max: effDomain.max - 5*60*1000 })} title="Back 5 minutes">◀ 5m</button>
+          <button className="btn btn-small" onClick={() => onDomainChange({ min: bounds.min, max: bounds.min + (effDomain.max - effDomain.min) })} title="Jump to start">⟪ Start</button>
+          <button className="btn btn-small" onClick={() => onDomainChange({ ...bounds })} title="Show full range">Reset</button>
+          <button className="btn btn-small" onClick={() => onDomainChange({ min: effDomain.min + 5*60*1000, max: effDomain.max + 5*60*1000 })} title="Forward 5 minutes">5m ▶</button>
+          <button className="btn btn-small" onClick={() => onDomainChange({ min: effDomain.min + 15*60*1000, max: effDomain.max + 15*60*1000 })} title="Forward 15 minutes">15m ▶</button>
+          <button className="btn btn-small" onClick={() => onDomainChange({ min: bounds.max - (effDomain.max - effDomain.min), max: bounds.max })} title="Jump to end">End ⟫</button>
+        </div>
+        <div className="scroller-range-row">
+          <span className="hint mono" style={{fontSize:11}}>{formatTime(effDomain.min, timeZone)}</span>
+          <input
+            className="scroller-range"
+            type="range"
+            min={0}
+            max={1000}
+            value={(() => {
+              const total = bounds.max - bounds.min - (effDomain.max - effDomain.min);
+              if (total <= 0) return 0;
+              return Math.round(((effDomain.min - bounds.min) / total) * 1000);
+            })()}
+            onChange={e => {
+              const frac = Number(e.target.value) / 1000;
+              const span = effDomain.max - effDomain.min;
+              const total = bounds.max - bounds.min - span;
+              const min = bounds.min + frac * Math.max(0, total);
+              onDomainChange({ min, max: min + span });
+            }}
+            title="Scrub through time — drag to scroll history"
+          />
+          <span className="hint mono" style={{fontSize:11}}>{formatTime(effDomain.max, timeZone)}</span>
+        </div>
+        <div className="hint" style={{textAlign:'center', marginTop:4}}>Drag the graph, use wheel/trackpad, or scrub above — ticks every <strong>5 minutes</strong> · wheel pans, Ctrl+wheel zooms</div>
+      </div>
 
       <h4 style={{marginTop:16}}>Color key — what each lane means <span className="chip">{effectiveLanes.length} series</span></h4>
       <p className="hint">Click the swatch or bar to pin/highlight. Click swatch row to toggle.</p>

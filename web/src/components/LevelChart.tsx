@@ -11,6 +11,8 @@ interface Props {
   onDomainChange: (d: { min: number; max: number }) => void;
 }
 
+const FIVE_MIN = 5 * 60 * 1000;
+
 export function LevelChart({ entries, timeZone, domain, rateOfChange, onDomainChange }: Props) {
   const wrapRef = useRef<SVGSVGElement>(null);
   const [cursor, setCursor] = useState<{ x: number; t: number; v: number } | null>(null);
@@ -40,7 +42,7 @@ export function LevelChart({ entries, timeZone, domain, rateOfChange, onDomainCh
       const y = (v: number) => PAD.top + (1 - (v - vLo) / Math.max(1, vHi - vLo)) * (H - PAD.top - PAD.bottom);
       const line = pts.map((p, i) => `${i === 0 ? 'M' : 'L'}${x(p.t).toFixed(1)},${y(p.v).toFixed(1)}`).join(' ');
       const area = `${line} L${x(tMax).toFixed(1)},${(H - PAD.bottom).toFixed(1)} L${x(tMin).toFixed(1)},${(H - PAD.bottom).toFixed(1)} Z`;
-      return { pts, tMin, tMax, vLo, vHi, x, y, line, area, isROC: true as const };
+      return { pts, tMin, tMax, effMin, effMax, vLo, vHi, x, y, line, area, isROC: true as const };
     }
     const tMinD = domain ? domain.min : pts[0]!.t;
     const tMaxD = domain ? domain.max : pts[pts.length - 1]!.t;
@@ -50,7 +52,7 @@ export function LevelChart({ entries, timeZone, domain, rateOfChange, onDomainCh
     const y = (v: number) => PAD.top + (1 - (v - vLo) / Math.max(1, vHi - vLo)) * (H - PAD.top - PAD.bottom);
     const line = pts.map((p, i) => `${i === 0 ? 'M' : 'L'}${x(p.t).toFixed(1)},${y(p.v).toFixed(1)}`).join(' ');
     const area = `${line} L${x(tMaxD).toFixed(1)},${(H - PAD.bottom).toFixed(1)} L${x(tMinD).toFixed(1)},${(H - PAD.bottom).toFixed(1)} Z`;
-    return { pts, tMin: tMinD, tMax: tMaxD, vLo, vHi, x, y, line, area, isROC: false as const };
+    return { pts, tMin: tMinD, tMax: tMaxD, effMin: tMinD, effMax: tMaxD, vLo, vHi, x, y, line, area, isROC: false as const };
   }, [entries, domain, rateOfChange]);
 
   if (!model) return null;
@@ -61,33 +63,77 @@ export function LevelChart({ entries, timeZone, domain, rateOfChange, onDomainCh
     const px = ((e.clientX - rect.left) / rect.width) * W;
     if (px < PAD.left || px > W - PAD.right) { setCursor(null); return; }
     const frac = (px - PAD.left) / (W - PAD.left - PAD.right);
-    const t = model.tMin + frac * (model.tMax - model.tMin);
+    const t = model.effMin + frac * (model.effMax - model.effMin);
     let best = model.pts[0]!;
     for (const p of model.pts) if (Math.abs(p.t - t) < Math.abs(best.t - t)) best = p;
     setCursor({ x: model.x(best.t), t: best.t, v: best.v });
   };
 
-  const onWheel: React.WheelEventHandler<SVGSVGElement> = (e) => {
+  const handleWheel: React.WheelEventHandler<SVGSVGElement> = (e) => {
     e.preventDefault();
-    if (!domain) return;
     const rect = wrapRef.current?.getBoundingClientRect();
-    if (!rect) return;
-    const px = ((e.clientX - rect.left) / rect.width) * W;
-    const frac = (px - PAD.left) / (W - PAD.left - PAD.right);
-    const time = model.tMin + frac * (model.tMax - model.tMin);
-    const factor = e.deltaY < 0 ? 0.8 : 1.25;
-    let min = time - (time - domain.min) * factor;
-    let max = time + (domain.max - time) * factor;
-    onDomainChange({ min, max });
+    if (!rect || !domain) return;
+    // Horizontal scroll pans time; Ctrl/Cmd+wheel zooms.
+    if (e.ctrlKey || e.metaKey) {
+      const px = ((e.clientX - rect.left) / rect.width) * W;
+      const frac = (px - PAD.left) / (W - PAD.left - PAD.right);
+      const time = model.effMin + frac * (model.effMax - model.effMin);
+      const factor = e.deltaY < 0 ? 0.8 : 1.25;
+      let min = time - (time - domain.min) * factor;
+      let max = time + (domain.max - time) * factor;
+      onDomainChange({ min, max });
+      return;
+    }
+    // Pan: wheel deltaX or deltaY scrolls time
+    const width = W - PAD.left - PAD.right;
+    const span = domain.max - domain.min;
+    const delta = (e.deltaX !== 0 ? e.deltaX : e.deltaY) / width * span * 0.6;
+    onDomainChange({ min: domain.min + delta, max: domain.max + delta });
   };
+
+  const handleDrag = (() => {
+    let startX: number | null = null;
+    let startDomain: { min: number; max: number } | null = null;
+    return {
+      down: (e: React.MouseEvent) => { startX = e.clientX; startDomain = domain ? { ...domain } : null; },
+      move: (e: React.MouseEvent) => {
+        if (startX === null || !startDomain || !domain) return;
+        const rect = wrapRef.current?.getBoundingClientRect();
+        const width = (rect?.width ?? W) - PAD.left - PAD.right;
+        const pxPerMs = width / (startDomain.max - startDomain.min);
+        const dxMs = (e.clientX - startX) / pxPerMs;
+        onDomainChange({ min: startDomain.min - dxMs, max: startDomain.max - dxMs });
+      },
+      up: () => { startX = null; startDomain = null; },
+    };
+  })();
 
   const gridLevels = model.isROC
     ? [model.vLo, 0, model.vHi].filter(v => v >= model.vLo && v <= model.vHi)
     : [0, 25, 50, 75, 100].filter(v => v >= model.vLo && v <= model.vHi);
 
+  // 5-minute ticks aligned to wall clock
+  const fiveMinTicks: number[] = [];
+  {
+    const start = Math.floor(model.effMin / FIVE_MIN) * FIVE_MIN;
+    for (let t = start; t <= model.effMax + FIVE_MIN; t += FIVE_MIN) {
+      if (t >= model.effMin - FIVE_MIN && t <= model.effMax + FIVE_MIN) fiveMinTicks.push(t);
+    }
+  }
+
   return (
     <div className="level-chart-wrap">
-      <svg ref={wrapRef} viewBox={`0 0 ${W} ${H}`} className="level-chart" onMouseMove={onMove} onMouseLeave={() => setCursor(null)} onWheel={onWheel}>
+      <svg
+        ref={wrapRef}
+        viewBox={`0 0 ${W} ${H}`}
+        className="level-chart"
+        onMouseMove={e => { onMove(e); handleDrag.move(e); }}
+        onMouseDown={handleDrag.down}
+        onMouseUp={handleDrag.up}
+        onMouseLeave={() => { setCursor(null); handleDrag.up(); }}
+        onWheel={handleWheel}
+        style={{ cursor: 'grab' }}
+      >
         <defs>
           <linearGradient id="lvlFill" x1="0" y1="0" x2="0" y2="1">
             <stop offset="0%" stopColor="#4ade80" stopOpacity="0.35" />
@@ -100,10 +146,21 @@ export function LevelChart({ entries, timeZone, domain, rateOfChange, onDomainCh
             <text x={PAD.left - 6} y={model.y(v) + 3} textAnchor="end" className="chart-tick">{model.isROC ? `${v.toFixed(1)}` : v}</text>
           </g>
         ))}
-        {[0,1,2,3,4].map(i => {
-          const t = model.tMin + ((model.tMax - model.tMin) * i) / 4;
-          return <text key={i} x={model.x(t)} y={H - 6} textAnchor={i===0?'start':i===4?'end':'middle'} className="chart-tick">{formatTime(t, timeZone)}</text>;
-        })}
+        {/* 5-minute vertical grid */}
+        {fiveMinTicks.map(t => (
+          <line key={t} x1={model.x(t)} x2={model.x(t)} y1={PAD.top} y2={H - PAD.bottom} stroke="#1e293b" strokeWidth={t % (60*60*1000) === 0 ? 1 : 0.5} opacity={t % (60*60*1000) === 0 ? 1 : 0.55} />
+        ))}
+        {/* labeled ticks every ~30 min (or denser when zoomed) */}
+        {(() => {
+          const span = model.effMax - model.effMin;
+          const labelStep = span < 2 * 60 * 60 * 1000 ? FIVE_MIN * 2 : span < 6 * 60 * 60 * 1000 ? 30 * 60 * 1000 : 60 * 60 * 1000;
+          const ticks: number[] = [];
+          const s = Math.floor(model.effMin / labelStep) * labelStep;
+          for (let t = s; t <= model.effMax; t += labelStep) if (t >= model.effMin) ticks.push(t);
+          return ticks.map(t => (
+            <text key={`lbl-${t}`} x={model.x(t)} y={H - 6} textAnchor="middle" className="chart-tick">{formatTime(t, timeZone)}</text>
+          ));
+        })()}
         <path d={model.area} fill="url(#lvlFill)" />
         <path d={model.line} fill="none" stroke={model.isROC ? '#fbbf24' : '#4ade80'} strokeWidth={2} />
         {cursor && (
@@ -118,6 +175,7 @@ export function LevelChart({ entries, timeZone, domain, rateOfChange, onDomainCh
           {formatTime(cursor.t, timeZone)} · {model.isROC ? `${cursor.v.toFixed(1)}%/hr` : `${cursor.v}%`} {model.isROC ? '(rate of change)' : ''}
         </div>
       )}
+      <div className="level-chart-scroll-hint hint">Scroll/pan: drag or wheel to move in time · Ctrl+wheel to zoom</div>
     </div>
   );
 }
