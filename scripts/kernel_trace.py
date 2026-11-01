@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python3
 """Historian script for converting the timestamps in kernel trace to UTC.
 
  TO USE:
@@ -142,10 +142,10 @@ def convert_timestamps(trace_file, file_handle, time_dict, first_jiffy,
 
 def usage():
   """Print usage of the script."""
-  print ("\nUsage: %s --bugreport=<path to bugreport>"
+  print(("\nUsage: %s --bugreport=<path to bugreport>"
          " --trace=<path to trace file>"
          " --device=<device type"
-         " hammerhead/shamu/flounder/flounder_lte>\n") % sys.argv[0]
+         " hammerhead/shamu/flounder/flounder_lte>\n") % sys.argv[0])
   sys.exit(1)
 
 
@@ -175,22 +175,24 @@ def parse_argv(argv):
 def main(argv):
   parse_argv(argv)
   if not flag_bugreport:
-    print "Bug report not valid"
+    print("Bug report not valid")
     usage()
     sys.exit(1)
   if not flag_trace:
-    print "Trace file not valid"
+    print("Trace file not valid")
     usage()
     sys.exit(1)
   if not flag_device:
-    print "Device not valid"
+    print("Device not valid")
     usage()
     sys.exit(1)
 
   try:
-    bugreport = open(flag_bugreport)
-  except IOError:
-    print "Unable to open bug report"
+    # Bug reports and trace files are not guaranteed to be valid UTF-8, so
+    # undecodable bytes are replaced rather than crashing the reader.
+    bugreport = open(flag_bugreport, errors="replace")
+  except OSError:
+    print("Unable to open bug report")
     sys.exit(1)
 
   suspend_exit = {}
@@ -216,10 +218,10 @@ def main(argv):
     index += 1
 
   try:
-    file_handle = open(flag_trace, "r")
+    file_handle = open(flag_trace, "r", errors="replace")
     trace_file = csv.reader(file_handle, delimiter=" ", skipinitialspace=True)
-  except IOError:
-    print "Unable to open trace file"
+  except OSError:
+    print("Unable to open trace file")
     sys.exit(1)
 
   convert_timestamps(trace_file, file_handle, time_dict, first_jiffy,
