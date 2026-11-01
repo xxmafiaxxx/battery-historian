@@ -3,6 +3,7 @@ import { useCollapsible } from './Collapsible';
 
 export interface SecretFind {
   kind: string;
+  raw?: string;
   masked: string;
   context: string;
   count: number;
@@ -20,6 +21,8 @@ export function FoundKeys({ secrets }: { secrets: SecretFind[] | null | undefine
   const [q, setQ] = useState('');
   const [sevFilter, setSevFilter] = useState<string>('all');
   const [limit, setLimit] = useState(40);
+  const [revealed, setRevealed] = useState<Set<string>>(new Set());
+  const [showAll, setShowAll] = useState(true);
   const [open, setOpen] = useCollapsible('found-keys', true);
 
   const filtered = useMemo(() => {
@@ -27,7 +30,7 @@ export function FoundKeys({ secrets }: { secrets: SecretFind[] | null | undefine
     if (sevFilter !== 'all') out = out.filter(s => s.severity === sevFilter);
     if (q.trim()) {
       const qq = q.toLowerCase();
-      out = out.filter(s => s.kind.toLowerCase().includes(qq) || s.masked.toLowerCase().includes(qq) || s.context.toLowerCase().includes(qq));
+      out = out.filter(s => s.kind.toLowerCase().includes(qq) || (s.raw ?? s.masked).toLowerCase().includes(qq) || s.context.toLowerCase().includes(qq));
     }
     return out;
   }, [list, q, sevFilter]);
@@ -46,8 +49,8 @@ export function FoundKeys({ secrets }: { secrets: SecretFind[] | null | undefine
       </div>
       <div id="found-keys-body" className="collapsible-body" hidden={!open}>
       <p className="hint">
-        Defensive scan of the raw report text. Values are <strong>masked</strong> by default — never share a raw bugreport that contains live keys.
-        Only analyze reports from devices you own or have explicit permission to inspect. If you find real keys, rotate them and strip the report before sharing.
+        Scan of the raw report text. Values are shown in full — use the eye button per row or the master toggle to hide them.
+        Only analyze reports from devices you own or have permission to inspect. If you find real keys, rotate them and strip the report before sharing.
       </p>
       <div className="banner banner-warn" style={{ margin: '8px 0 10px', fontSize: 12, lineHeight: 1.5 }}>
         Bugreports can dump app logs, intent extras, and config. Treat any <code>AKIA*</code>, <code>AIza*</code>, JWT, or <code>password=</code> hit as a leak until proven otherwise.
@@ -63,13 +66,14 @@ export function FoundKeys({ secrets }: { secrets: SecretFind[] | null | undefine
           <option value="low">Low</option>
         </select>
         <span className="hint">{filtered.length} shown · {list.length} total</span>
+        <button className="btn btn-small" onClick={() => setShowAll(v => !v)} title="Toggle hide/show for all secret values">{showAll ? '🙈 Hide all' : '👁 Show all'}</button>
         <button className="btn btn-small" style={{ marginLeft: 'auto' }} onClick={() => setLimit(l => Math.min(filtered.length, l + 40))} disabled={shown.length >= filtered.length}>Show more</button>
         <button className="btn btn-small" onClick={() => {
-          const csv = ['kind,severity,count,masked,context', ...filtered.map(s => `${JSON.stringify(s.kind)},${s.severity},${s.count},${JSON.stringify(s.masked)},${JSON.stringify(s.context)}`)].join('\n');
+          const csv = ['kind,severity,count,value,context', ...filtered.map(s => `${JSON.stringify(s.kind)},${s.severity},${s.count},${JSON.stringify(s.raw ?? s.masked)},${JSON.stringify(s.context)}`)].join('\n');
           const blob = new Blob([csv], { type: 'text/csv' });
           const url = URL.createObjectURL(blob);
           const a = document.createElement('a'); a.href = url; a.download = 'found-keys.csv'; a.click(); URL.revokeObjectURL(url);
-        }}>Download CSV (masked)</button>
+        }}>Download CSV</button>
       </div>
 
       {list.length === 0 ? (
@@ -79,22 +83,28 @@ export function FoundKeys({ secrets }: { secrets: SecretFind[] | null | undefine
       ) : (
         <div className="table-scroll app-table-wrap" style={{ maxHeight: 440 }}>
           <table className="data-table app-table">
-            <thead><tr><th>Severity</th><th>Kind</th><th>Value (masked)</th><th>Count</th><th>Context</th></tr></thead>
+            <thead><tr><th>Severity</th><th>Kind</th><th>Value</th><th></th><th>Count</th><th>Context</th></tr></thead>
             <tbody>
-              {shown.map((s, i) => (
-                <tr key={`${s.kind}-${s.masked}-${i}`}>
+              {shown.map((s, i) => {
+                const key = `${s.kind}-${s.masked}-${i}`;
+                const isMasked = showAll ? revealed.has(key) : !revealed.has(key);
+                const display = isMasked ? s.masked : (s.raw ?? s.masked);
+                return (
+                <tr key={key}>
                   <td><span className="chip" style={{ background: `${SEV_COLOR[s.severity] ?? '#64748b'}22`, color: SEV_COLOR[s.severity] ?? '#94a3b8', borderColor: `${SEV_COLOR[s.severity] ?? '#64748b'}55` }}>{s.severity}</span></td>
                   <td className="mono" style={{ fontWeight: 600, whiteSpace: 'nowrap' }}>{s.kind}</td>
-                  <td className="mono" style={{ maxWidth: 280, overflow: 'hidden', textOverflow: 'ellipsis' }} title={s.masked}>{s.masked}</td>
+                  <td className="mono" style={{ maxWidth: 360, overflow: 'hidden', textOverflow: 'ellipsis', wordBreak: 'break-all' }} title={display}>{display}</td>
+                  <td style={{ whiteSpace: 'nowrap' }}><button className="btn btn-small" onClick={() => setRevealed(prev => { const n = new Set(prev); if (n.has(key)) n.delete(key); else n.add(key); return n; })} title={isMasked ? 'Show raw value' : 'Hide value'}>{isMasked ? '👁 Show' : '🙈 Hide'}</button></td>
                   <td className="mono">{s.count}</td>
                   <td className="mono" style={{ maxWidth: 420, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={s.context}>{s.context}</td>
                 </tr>
-              ))}
+                );
+              })}
             </tbody>
           </table>
         </div>
       )}
-      <p className="hint" style={{ marginTop: 8 }}>Patterns: <code>AKIA[0-9A-Z]&#123;16&#125;</code> · <code>AIza[0-9A-Za-z-_&#123;35&#125;]</code> · JWT · <code>-----BEGIN * PRIVATE KEY-----</code> · generic <code>(api_key|secret|password|token)=value</code>. Masked as <code>abc•••yz</code>. Rotate any real hit immediately.</p>
+      <p className="hint" style={{ marginTop: 8 }}>Patterns: <code>AKIA[0-9A-Z]&#123;16&#125;</code> · <code>AIza[0-9A-Za-z-_&#123;35&#125;]</code> · JWT · <code>-----BEGIN * PRIVATE KEY-----</code> · generic <code>(api_key|secret|password|token)=value</code>. Values shown raw — use Hide to mask.</p>
       </div>
     </section>
   );

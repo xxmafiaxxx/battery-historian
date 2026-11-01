@@ -9,6 +9,7 @@ import (
 // SecretFind is one potential secret/key sighting.
 type SecretFind struct {
 	Kind     string `json:"kind"`     // e.g. "AWS Access Key", "Private Key", "Generic Secret"
+	Raw      string `json:"raw"`      // unmasked value (shown in UI with reveal toggle)
 	Masked   string `json:"masked"`   // redacted value shown by default
 	Context  string `json:"context"`  // short line snippet (also redacted if it contains the raw)
 	Count    int    `json:"count"`
@@ -52,6 +53,7 @@ func ExtractSecrets(contents string) []SecretFind {
 	type agg struct {
 		kind     string
 		severity string
+		raw      string
 		masked   string
 		context  string
 		count    int
@@ -75,7 +77,7 @@ func ExtractSecrets(contents string) []SecretFind {
 			ctx = ctx[:120] + "…"
 		}
 		ctx = maskContext(ctx, raw)
-		m[key] = &agg{kind: kind, severity: severity, masked: masked, context: ctx, count: 1}
+		m[key] = &agg{kind: kind, severity: severity, raw: raw, masked: masked, context: ctx, count: 1}
 	}
 
 	lines := strings.Split(contents, "\n")
@@ -129,7 +131,7 @@ func ExtractSecrets(contents string) []SecretFind {
 	}
 	out := make([]SecretFind, 0, len(m))
 	for _, a := range m {
-		out = append(out, SecretFind{Kind: a.kind, Masked: a.masked, Context: a.context, Count: a.count, Severity: a.severity})
+		out = append(out, SecretFind{Kind: a.kind, Raw: a.raw, Masked: a.masked, Context: a.context, Count: a.count, Severity: a.severity})
 	}
 	sort.Slice(out, func(i, j int) bool {
 		sevRank := map[string]int{"high": 0, "medium": 1, "low": 2}
