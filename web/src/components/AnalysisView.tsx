@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import type { UploadResponse } from '../api/types';
 import { parseHistorianCsv } from '../data/historianCsv';
 import { parseLevelSummary } from '../data/levelSummary';
@@ -9,7 +9,10 @@ import { AppStats } from './AppStats';
 import { LevelSummaryTable } from './LevelSummaryTable';
 import { Timeline } from './Timeline';
 import { LevelChart } from './LevelChart';
+import { HistorianTabs } from './HistorianTabs';
+import { HistorianToolbar } from './HistorianToolbar';
 import { formatMah } from '../data/time';
+import { TAB_CONFIGS, getTabExtent, type HistorianTabId } from '../data/historianTabs';
 
 export function AnalysisView({ data }: { data: UploadResponse }) {
   const tz = data.location || 'UTC';
@@ -33,6 +36,51 @@ export function AnalysisView({ data }: { data: UploadResponse }) {
     .filter(e => e.seriesName === 'Battery Level');
   const battery = data.batteryStats?.system?.battery ?? null;
   const timeOnBattery = battery?.battery_realtime_msec ?? 0;
+
+  const [activeTab, setActiveTab] = useState<HistorianTabId>('v2');
+  const [regexp, setRegexp] = useState('');
+  const [showRate, setShowRate] = useState(false);
+  const [showBars, setShowBars] = useState(true);
+  const activeConfig = TAB_CONFIGS.find(t => t.id === activeTab) ?? TAB_CONFIGS[0]!;
+
+  const [domainKey, setDomainKey] = useState<string>('Default');
+  const [domain, setDomain] = useState<{ min: number; max: number } | null>(null);
+
+  // Global bounds for Default
+  const globalBounds = useMemo(() => {
+    let min = Infinity; let max = -Infinity;
+    for (const l of parsedLogs) {
+      const s = l.startMs && l.startMs > 0 ? l.startMs : l.extent.min;
+      if (s > 0 && s < min) min = s;
+      if (l.extent.max > max) max = l.extent.max;
+    }
+    if (!Number.isFinite(min) || !Number.isFinite(max) || max <= min) return null;
+    const pad = (max - min) * 0.02;
+    return { min: min - pad, max: max + pad };
+  }, [parsedLogs]);
+
+  // Initialize / retime domain when tab or logs change and user is on Default
+  useEffect(() => {
+    const fromTab = getTabExtent(parsedLogs, activeConfig);
+    if (fromTab) { setDomain(fromTab); setDomainKey('Default'); }
+    else if (globalBounds) { setDomain(globalBounds); setDomainKey('Default'); }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab, parsedLogs.length]);
+
+  const handleDomainKeyChange = (key: string) => {
+    setDomainKey(key);
+    if (key === 'Default') {
+      const fromTab = getTabExtent(parsedLogs, activeConfig);
+      setDomain(fromTab ?? globalBounds);
+      return;
+    }
+    if (key === 'Shown metrics') {
+      // Leave as-is; Timeline will report its visible domain back via onDomainChange
+      return;
+    }
+    const hit = parsedLogs.find(l => l.source === key);
+    if (hit && hit.extent.max > hit.extent.min) setDomain({ ...hit.extent });
+  };
 
   return (
     <div className="analysis">
@@ -69,23 +117,47 @@ export function AnalysisView({ data }: { data: UploadResponse }) {
         </div>
       </section>
 
-      {levelEntries.length > 1 && (
-        <section className="card">
-          <h3>Battery level</h3>
-          <LevelChart entries={levelEntries} timeZone={tz} />
-        </section>
-      )}
-
-      {parsedLogs.some(l => l.entries.length > 0) ? (
-        <Timeline logs={parsedLogs} timeZone={tz} />
-      ) : (
-        data.criticalError === '' && (
-          <div className="banner banner-warn">No timeline events were parsed from this bug report.</div>
-        )
-      )}
+      {/* Historian graphic: tabs + toolbar + shared time/battery graph */}
+      <section className="card" id="historian">
+        <HistorianTabs active={activeTab} onChange={setActiveTab} />
+        <p className="hint" style={{ margin: '6px 0 8px' }}>{activeConfig.subtitle}</p>
+        <HistorianToolbar
+          logs={parsedLogs}
+          domain={domainKey}
+          onDomainChange={handleDomainKeyChange}
+          regexp={regexp}
+          onRegexpChange={setRegexp}
+          showRateOfChange={showRate}
+          onRateChange={setShowRate}
+          showBars={showBars}
+          onShowBars={setShowBars}
+        />
+        {levelEntries.length > 1 && (
+          <div style={{ marginTop: 10 }}>
+            <LevelChart entries={levelEntries} timeZone={tz} domain={domain} rateOfChange={showRate} onDomainChange={setDomain} />
+          </div>
+        )}
+        {parsedLogs.some(l => l.entries.length > 0) ? (
+          <Timeline
+            logs={parsedLogs}
+            timeZone={tz}
+            tab={activeConfig}
+            domain={domain}
+            onDomainChange={setDomain}
+            domainKey={domainKey}
+            regexp={regexp}
+            showRateOfChange={showRate}
+            showBars={showBars}
+          />
+        ) : (
+          data.criticalError === '' && (
+            <div className="banner banner-warn">No timeline events were parsed from this bug report.</div>
+          )
+        )}
+      </section>
 
       <nav className="analysis-jump" aria-label="Sections">
-        <a href="#timeline">Timeline</a>
+        <a href="#historian">Historian</a>
         <a href="#level-summary">Level summary</a>
         <a href="#system-stats">System stats {data.checkinSummary ? `· ${data.checkinSummary.ReportVersion ? `v${data.checkinSummary.ReportVersion}` : ''}` : ''}</a>
         <a href="#app-stats">App stats · {appStats.length} apps</a>

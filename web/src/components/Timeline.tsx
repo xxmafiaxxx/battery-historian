@@ -2,6 +2,8 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import type { HistorianEntry } from '../data/historianCsv';
 import { Metric, groupBySeries } from '../data/historianCsv';
 import { formatDuration, formatTime } from '../data/time';
+import { isValidRegExp } from '../data/levelUtils';
+import type { TabConfig } from '../data/historianTabs';
 
 export interface ParsedLog {
   source: string;
@@ -20,68 +22,63 @@ const SERIES_ORDER = [
   'Audio','Video','Camera','Flashlight on','Sensor','Battery Saver','Plug','Charging status','Foreground process','Coulomb charge','Brightness','Voltage','Temperature',
 ];
 
-// Semantic color + description for every legacy timeline series.
-// Colors are chosen to BE the meaning: red = power/cost, blue = cpu,
-// green = location/sensor, amber = warning. Fallback is a hashed palette
-// for never-seen custom metrics.
 type SeriesMeta = { color: string; desc: string; cat: string };
 const SERIES_META: Record<string, SeriesMeta> = {
-  'Battery Level': { color: '#4ade80', desc: 'Battery charge 0–100%. Thin green overlay line across the whole timeline.', cat: 'Battery' },
-  'CPU running': { color: '#2563eb', desc: 'CPU awake. When absent the device is in deep sleep.', cat: 'CPU / Wakelocks' },
-  'Kernel only uptime': { color: '#dc2626', desc: 'CPU awake but no userspace wakelock held — kernel work only.', cat: 'CPU / Wakelocks' },
-  'Userspace wakelocks': { color: '#f97316', desc: 'At least one app wakelock held — the usual reason CPU stays awake.', cat: 'CPU / Wakelocks' },
-  'Wakelock In': { color: '#fb923c', desc: 'Per-app partial wakelocks — bars stack by UID when many apps hold one.', cat: 'CPU / Wakelocks' },
-  'Wakelock Out': { color: '#fdba74', desc: 'Wakelocks aggregated outward (the old "out" bucket).', cat: 'CPU / Wakelocks' },
-  'Long Wakelocks': { color: '#991b1b', desc: 'Wakelocks that lasted unusually long — battery risk.', cat: 'CPU / Wakelocks' },
-  'App Processor wakeup': { color: '#7c3aed', desc: 'AP wakeup reason that woke the Application Processor.', cat: 'CPU / Wakelocks' },
-  'Screen': { color: '#ef4444', desc: 'Screen ON. Single biggest power draw while on.', cat: 'Display' },
-  'Brightness': { color: '#facc15', desc: 'Screen brightness level (darker → brighter).', cat: 'Display' },
-  'Top app': { color: '#a78bfa', desc: 'Foreground app (package in the value).', cat: 'Apps' },
-  'Top Application': { color: '#a78bfa', desc: 'Foreground app (alias of Top app).', cat: 'Apps' },
-  'Foreground process': { color: '#8b5cf6', desc: 'Process with foreground priority.', cat: 'Apps' },
-  'Active process': { color: '#06b6d4', desc: 'Any active app process.', cat: 'Apps' },
-  'Crashes (logcat)': { color: '#000000', desc: 'App or system crash (red in legacy).', cat: 'Health' },
-  'AM Low Memory / ANR': { color: '#f97316', desc: 'Low-memory kill or ANR — system under pressure.', cat: 'Health' },
-  'Doze': { color: '#475569', desc: 'Doze / light-doze device idle mode.', cat: 'Power saving' },
-  'Battery Saver': { color: '#eab308', desc: 'Battery Saver active.', cat: 'Power saving' },
-  'JobScheduler Job': { color: '#0ea5e9', desc: 'JobScheduler jobs running (deferred work).', cat: 'System' },
-  'Sync App': { color: '#14b8a6', desc: 'Account sync running for an app.', cat: 'System' },
-  'SyncManager': { color: '#14b8a6', desc: 'SyncManager activity.', cat: 'System' },
-  'GPS': { color: '#10b981', desc: 'GPS hardware on.', cat: 'Location / Radio' },
-  'GPS is on': { color: '#10b981', desc: 'GPS on (value = requesting package).', cat: 'Location / Radio' },
-  'BLE scanning': { color: '#22d3ee', desc: 'Bluetooth LE scan active.', cat: 'Location / Radio' },
-  'Phone scanning': { color: '#6366f1', desc: 'Cell radio scanning.', cat: 'Location / Radio' },
-  'Phone state': { color: '#6366f1', desc: 'Cell state: in / out / off.', cat: 'Location / Radio' },
-  'Network connectivity': { color: '#3b82f6', desc: 'Active network transport (WIFI / MOBILE / NONE).', cat: 'Connectivity' },
-  'Mobile radio active': { color: '#ec4899', desc: 'Mobile radio powered and transferring.', cat: 'Connectivity' },
-  'Mobile signal strength': { color: '#f43f5e', desc: 'Cell signal: none → great (white → red → green).', cat: 'Connectivity' },
-  'Mobile network type': { color: '#8b5cf6', desc: 'Radio tech: lte / hspa / edge …', cat: 'Connectivity' },
-  'Wifi full lock': { color: '#0ea5e9', desc: 'WIFI_MODE_FULL held.', cat: 'Wi-Fi' },
-  'Wifi scan': { color: '#38bdf8', desc: 'Wi-Fi scan active.', cat: 'Wi-Fi' },
-  'Wifi supplicant': { color: '#0284c7', desc: 'wpa_supplicant state (SCANNING / COMPLETED …).', cat: 'Wi-Fi' },
-  'Wifi radio': { color: '#0ea5e9', desc: 'Wi-Fi radio on.', cat: 'Wi-Fi' },
-  'Wifi signal strength': { color: '#f43f5e', desc: 'Wi-Fi signal: none → great.', cat: 'Wi-Fi' },
-  'Wifi running': { color: '#0ea5e9', desc: 'Wi-Fi stack running.', cat: 'Wi-Fi' },
+  'Battery Level': { color: '#4ade80', desc: 'Battery charge 0–100%.', cat: 'Battery' },
+  'CPU running': { color: '#2563eb', desc: 'CPU awake.', cat: 'CPU / Wakelocks' },
+  'Kernel only uptime': { color: '#dc2626', desc: 'Kernel work only.', cat: 'CPU / Wakelocks' },
+  'Userspace wakelocks': { color: '#f97316', desc: 'App wakelock held.', cat: 'CPU / Wakelocks' },
+  'Wakelock In': { color: '#fb923c', desc: 'Per-app partial wakelocks.', cat: 'CPU / Wakelocks' },
+  'Wakelock Out': { color: '#fdba74', desc: 'Aggregated outward bucket.', cat: 'CPU / Wakelocks' },
+  'Long Wakelocks': { color: '#991b1b', desc: 'Unusually long.', cat: 'CPU / Wakelocks' },
+  'App Processor wakeup': { color: '#7c3aed', desc: 'AP wakeup reason.', cat: 'CPU / Wakelocks' },
+  'Screen': { color: '#ef4444', desc: 'Screen ON.', cat: 'Display' },
+  'Brightness': { color: '#facc15', desc: 'Brightness.', cat: 'Display' },
+  'Top app': { color: '#a78bfa', desc: 'Foreground app.', cat: 'Apps' },
+  'Top Application': { color: '#a78bfa', desc: 'Foreground app.', cat: 'Apps' },
+  'Foreground process': { color: '#8b5cf6', desc: 'Foreground priority.', cat: 'Apps' },
+  'Active process': { color: '#06b6d4', desc: 'Active process.', cat: 'Apps' },
+  'Crashes (logcat)': { color: '#000000', desc: 'Crash.', cat: 'Health' },
+  'AM Low Memory / ANR': { color: '#f97316', desc: 'Low-memory/ANR.', cat: 'Health' },
+  'Doze': { color: '#475569', desc: 'Doze.', cat: 'Power saving' },
+  'Battery Saver': { color: '#eab308', desc: 'Battery Saver.', cat: 'Power saving' },
+  'JobScheduler Job': { color: '#0ea5e9', desc: 'JobScheduler.', cat: 'System' },
+  'Sync App': { color: '#14b8a6', desc: 'Account sync.', cat: 'System' },
+  'SyncManager': { color: '#14b8a6', desc: 'SyncManager.', cat: 'System' },
+  'GPS': { color: '#10b981', desc: 'GPS on.', cat: 'Location / Radio' },
+  'GPS is on': { color: '#10b981', desc: 'GPS requesting.', cat: 'Location / Radio' },
+  'BLE scanning': { color: '#22d3ee', desc: 'BLE scan.', cat: 'Location / Radio' },
+  'Phone scanning': { color: '#6366f1', desc: 'Radio scanning.', cat: 'Location / Radio' },
+  'Phone state': { color: '#6366f1', desc: 'Cell state.', cat: 'Location / Radio' },
+  'Network connectivity': { color: '#3b82f6', desc: 'Transport.', cat: 'Connectivity' },
+  'Mobile radio active': { color: '#ec4899', desc: 'Radio active.', cat: 'Connectivity' },
+  'Mobile signal strength': { color: '#f43f5e', desc: 'Signal.', cat: 'Connectivity' },
+  'Mobile network type': { color: '#8b5cf6', desc: 'Radio tech.', cat: 'Connectivity' },
+  'Wifi full lock': { color: '#0ea5e9', desc: 'WIFI_MODE_FULL.', cat: 'Wi-Fi' },
+  'Wifi scan': { color: '#38bdf8', desc: 'Wi-Fi scan.', cat: 'Wi-Fi' },
+  'Wifi supplicant': { color: '#0284c7', desc: 'wpa state.', cat: 'Wi-Fi' },
+  'Wifi radio': { color: '#0ea5e9', desc: 'Wi-Fi radio.', cat: 'Wi-Fi' },
+  'Wifi signal strength': { color: '#f43f5e', desc: 'Wi-Fi signal.', cat: 'Wi-Fi' },
+  'Wifi running': { color: '#0ea5e9', desc: 'Wi-Fi stack.', cat: 'Wi-Fi' },
   'Wifi on': { color: '#0ea5e9', desc: 'Wi-Fi enabled.', cat: 'Wi-Fi' },
-  'Audio': { color: '#f59e0b', desc: 'Audio playback active.', cat: 'Sensors' },
-  'Video': { color: '#f59e0b', desc: 'Video playback.', cat: 'Sensors' },
-  'Camera': { color: '#f59e0b', desc: 'Camera active.', cat: 'Sensors' },
-  'Flashlight on': { color: '#fde047', desc: 'Flashlight/torch on.', cat: 'Sensors' },
-  'Sensor': { color: '#84cc16', desc: 'Sensor active (number in value).', cat: 'Sensors' },
-  'Plug': { color: '#22c55e', desc: 'Charger: ac / usb / wireless / none.', cat: 'Battery' },
-  'Charging status': { color: '#16a34a', desc: 'Charging / discharging / full / not charging.', cat: 'Battery' },
-  'Coulomb charge': { color: '#15803d', desc: 'Coulomb counter (mAh).', cat: 'Battery' },
-  'Voltage': { color: '#16a34a', desc: 'Battery voltage (mV).', cat: 'Battery' },
-  'Temperature': { color: '#dc2626', desc: 'Battery temperature (white → red → black by heat).', cat: 'Battery' },
+  'Audio': { color: '#f59e0b', desc: 'Audio.', cat: 'Sensors' },
+  'Video': { color: '#f59e0b', desc: 'Video.', cat: 'Sensors' },
+  'Camera': { color: '#f59e0b', desc: 'Camera.', cat: 'Sensors' },
+  'Flashlight on': { color: '#fde047', desc: 'Torch.', cat: 'Sensors' },
+  'Sensor': { color: '#84cc16', desc: 'Sensor.', cat: 'Sensors' },
+  'Plug': { color: '#22c55e', desc: 'Charger.', cat: 'Battery' },
+  'Charging status': { color: '#16a34a', desc: 'Charging state.', cat: 'Battery' },
+  'Coulomb charge': { color: '#15803d', desc: 'Coulomb.', cat: 'Battery' },
+  'Voltage': { color: '#16a34a', desc: 'Voltage.', cat: 'Battery' },
+  'Temperature': { color: '#dc2626', desc: 'Temperature.', cat: 'Battery' },
 };
 
 function metaFor(name: string): SeriesMeta {
   const m = SERIES_META[name];
   if (m) return m;
-  // Stable hash fallback so custom/unknown series still get a distinct color.
   let h = 0; for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) >>> 0;
   const fallback = ['#6a5acd','#008b8b','#d2691e','#556b2f','#4682b4','#9acd32','#ff8c00','#9932cc','#5f9ea0','#c71585'][h % 10]!;
-  return { color: fallback, desc: 'Metric from the bugreport — no built-in description.', cat: 'Other' };
+  return { color: fallback, desc: 'Metric.', cat: 'Other' };
 }
 
 const ALWAYS_ON_SERIES = new Set(SERIES_ORDER);
@@ -90,16 +87,52 @@ const MARGIN = { top: 24, right: 16, bottom: 28, left: 168 };
 const MAX_LANES = 50;
 interface SeriesLane { name: string; entries: HistorianEntry[]; on: boolean; }
 
-export function Timeline({ logs, timeZone }: { logs: ParsedLog[]; timeZone: string }) {
+interface Props {
+  logs: ParsedLog[];
+  timeZone: string;
+  tab: TabConfig;
+  domain: { min: number; max: number } | null;
+  onDomainChange: (d: { min: number; max: number }) => void;
+  domainKey: string;
+  regexp: string;
+  showRateOfChange: boolean;
+  showBars: boolean;
+}
+
+export function Timeline({ logs, timeZone, tab, domain, onDomainChange, domainKey, regexp, showRateOfChange, showBars }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const wrapRef = useRef<HTMLDivElement>(null);
   const [lanes, setLanes] = useState<SeriesLane[]>([]);
-  const [domain, setDomain] = useState<{ min: number; max: number } | null>(null);
   const [hover, setHover] = useState<{ x: number; y: number; text: string[] } | null>(null);
   const [hoverLane, setHoverLane] = useState<string | null>(null);
+  const [pinned, setPinned] = useState<string | null>(null);
   const dragRef = useRef<{ x: number; min: number; max: number } | null>(null);
 
   const allEntries = useMemo(() => logs.flatMap(l => l.entries), [logs]);
+
+  // Tab filtering: restrict entries to tab's barOrder/logSources
+  const tabEntries = useMemo(() => {
+    if (tab.id === 'custom' && tab.barOrder.length === 0) {
+      // Custom starts empty — show nothing until user adds via toolbar (future); for now show all
+      return allEntries;
+    }
+    if (tab.barOrder.length === 0 && tab.logSources.length === 0) return allEntries;
+    const allowed = new Set(tab.barOrder);
+    const allowedSources = new Set(tab.logSources);
+    const hiddenSources = new Set(tab.logSourcesHidden);
+    return allEntries.filter(e => {
+      if (hiddenSources.has(e.source)) return false;
+      if (allowedSources.size > 0) {
+        // Event Log tab: only Event Log source; but allow barOrder metrics even from other sources (AM_*)
+        if (allowedSources.has(e.source)) return true;
+        if (allowed.has(e.seriesName)) return true;
+        return false;
+      }
+      if (allowed.size > 0) return allowed.has(e.seriesName) || e.seriesName === LEVEL_SERIES;
+      return true;
+    });
+  }, [allEntries, tab]);
+
   const bounds = useMemo(() => {
     let min = Infinity; let max = -Infinity;
     for (const l of logs) {
@@ -113,7 +146,7 @@ export function Timeline({ logs, timeZone }: { logs: ParsedLog[]; timeZone: stri
   }, [logs]);
 
   useEffect(() => {
-    const groups = groupBySeries(allEntries);
+    const groups = groupBySeries(tabEntries);
     const orderIdx = (name: string) => {
       const i = SERIES_ORDER.indexOf(name);
       return i === -1 ? SERIES_ORDER.length : i;
@@ -121,30 +154,45 @@ export function Timeline({ logs, timeZone }: { logs: ParsedLog[]; timeZone: stri
     const sorted = [...groups.entries()]
       .filter(([name]) => name !== LEVEL_SERIES)
       .sort((a, b) => orderIdx(a[0]) - orderIdx(b[0]) || b[1].length - a[1].length)
-      .map(([name, entries]): SeriesLane => ({ name, entries, on: ALWAYS_ON_SERIES.has(name) }));
+      .map(([name, entries]): SeriesLane => ({ name, entries, on: ALWAYS_ON_SERIES.has(name) || tab.id !== 'v2' }));
+    // For Custom empty, keep all on
     setLanes(sorted);
-    setDomain(bounds);
-  }, [allEntries, bounds]);
+  }, [tabEntries, tab.id]);
 
+  // Regexp filtering applied at lane entries level
+  const regexpFilteredLanes = useMemo(() => {
+    if (!regexp || !isValidRegExp(regexp)) return null;
+    const re = new RegExp(regexp, 'i');
+    return lanes.map(l => ({
+      ...l,
+      entries: l.entries.filter(e => {
+        const v = String(e.value ?? e.opt ?? '');
+        return re.test(v) || re.test(e.seriesName);
+      }),
+    }));
+  }, [lanes, regexp]);
+
+  const effectiveLanes = regexpFilteredLanes ?? lanes;
   const levelEntries = useMemo(
-    () => allEntries.filter(e => e.seriesName === LEVEL_SERIES && e.startTime > 0).sort((a, b) => a.startTime - b.startTime),
-    [allEntries],
+    () => tabEntries.filter(e => e.seriesName === LEVEL_SERIES && e.startTime > 0).sort((a, b) => a.startTime - b.startTime),
+    [tabEntries],
   );
-  const visibleLanes = useMemo(() => lanes.filter(l => l.on).slice(0, MAX_LANES), [lanes]);
+  const visibleLanes = useMemo(() => effectiveLanes.filter(l => l.on).slice(0, MAX_LANES), [effectiveLanes]);
 
-  // legend grouped by category
+  const effDomain = domain ?? bounds;
+
   const legendGroups = useMemo(() => {
     const cats = new Map<string, SeriesLane[]>();
-    for (const l of lanes) {
+    for (const l of effectiveLanes) {
       const c = metaFor(l.name).cat;
       const arr = cats.get(c) ?? []; arr.push(l); cats.set(c, arr);
     }
     return [...cats.entries()].sort((a,b) => a[0].localeCompare(b[0]));
-  }, [lanes]);
+  }, [effectiveLanes]);
 
   useEffect(() => {
     const canvas = canvasRef.current; const wrap = wrapRef.current;
-    if (!canvas || !wrap || !domain || domain.max <= domain.min) return;
+    if (!canvas || !wrap || effDomain.max <= effDomain.min) return;
     const draw = () => {
       const dpr = window.devicePixelRatio || 1;
       const width = wrap.clientWidth;
@@ -155,8 +203,8 @@ export function Timeline({ logs, timeZone }: { logs: ParsedLog[]; timeZone: stri
       const ctx = canvas.getContext('2d'); if (!ctx) return;
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       ctx.clearRect(0, 0, width, height);
-      const x = (t: number) => MARGIN.left + ((t - domain.min) / (domain.max - domain.min)) * (width - MARGIN.left - MARGIN.right);
-      const t = (px: number) => domain.min + ((px - MARGIN.left) / (width - MARGIN.left - MARGIN.right)) * (domain.max - domain.min);
+      const x = (t: number) => MARGIN.left + ((t - effDomain.min) / (effDomain.max - effDomain.min)) * (width - MARGIN.left - MARGIN.right);
+      const t = (px: number) => effDomain.min + ((px - MARGIN.left) / (width - MARGIN.left - MARGIN.right)) * (effDomain.max - effDomain.min);
       ctx.font = '11px system-ui, sans-serif';
       ctx.fillStyle = '#93a0b8'; ctx.strokeStyle = '#1e293b';
       for (let i = 0; i <= 5; i++) {
@@ -168,27 +216,26 @@ export function Timeline({ logs, timeZone }: { logs: ParsedLog[]; timeZone: stri
       }
       visibleLanes.forEach((lane, li) => {
         const y = MARGIN.top + li * (LANE_HEIGHT + LANE_GAP);
-        const isHL = hoverLane === lane.name;
-        // label bg highlight
-        if (isHL) { ctx.fillStyle = 'rgba(96,165,250,0.12)'; ctx.fillRect(0, y - 1, MARGIN.left - 2, LANE_HEIGHT + 2); }
+        const isHL = hoverLane === lane.name || pinned === lane.name;
+        if (isHL) { ctx.fillStyle = 'rgba(96,165,250,0.16)'; ctx.fillRect(0, y - 1, MARGIN.left - 2, LANE_HEIGHT + 2); }
         ctx.fillStyle = isHL ? '#e2e8f0' : '#c7d2e8';
         ctx.textAlign = 'right';
         ctx.font = isHL ? '600 11px system-ui, sans-serif' : '11px system-ui, sans-serif';
         ctx.fillText(truncate(lane.name, 22), MARGIN.left - 24, y + LANE_HEIGHT - 5);
-        // color dot
         ctx.fillStyle = metaFor(lane.name).color;
         ctx.beginPath(); ctx.arc(MARGIN.left - 10, y + LANE_HEIGHT/2, 5, 0, Math.PI*2); ctx.fill();
+        if (!showBars) return;
         ctx.fillStyle = metaFor(lane.name).color;
+        ctx.globalAlpha = showRateOfChange ? 0.35 : (isHL || pinned ? 1 : 0.95);
         for (const e of lane.entries) {
           const x0 = x(e.startTime); const x1 = x(Math.max(e.endTime, e.startTime + 1));
           if (x1 < MARGIN.left || x0 > width - MARGIN.right) continue;
           const w = Math.max(1.5, x1 - x0);
-          ctx.globalAlpha = isHL ? 1 : 0.95;
           ctx.fillRect(Math.max(MARGIN.left, x0), y, w, LANE_HEIGHT);
         }
         ctx.globalAlpha = 1;
       });
-      if (levelEntries.length > 1) {
+      if (levelEntries.length > 1 && !showRateOfChange) {
         ctx.strokeStyle = '#4ade80'; ctx.lineWidth = 1.6; ctx.beginPath(); let started = false;
         for (const e of levelEntries) {
           const px = x(e.startTime);
@@ -202,13 +249,13 @@ export function Timeline({ logs, timeZone }: { logs: ParsedLog[]; timeZone: stri
     draw();
     const ro = new ResizeObserver(draw); ro.observe(wrap);
     return () => ro.disconnect();
-  }, [visibleLanes, levelEntries, domain, timeZone, hoverLane]);
+  }, [visibleLanes, levelEntries, effDomain, timeZone, hoverLane, pinned, showBars, showRateOfChange]);
 
   const xToTime = (clientX: number): { time: number; px: number } => {
     const canvas = canvasRef.current; const rect = canvas?.getBoundingClientRect();
     const px = clientX - (rect?.left ?? 0);
     const width = (rect?.width ?? 1) - MARGIN.left - MARGIN.right;
-    const time = domain!.min + ((px - MARGIN.left) / width) * (domain!.max - domain!.min);
+    const time = effDomain.min + ((px - MARGIN.left) / width) * (effDomain.max - effDomain.min);
     return { time, px };
   };
   const laneAtY = (clientY: number): string | null => {
@@ -222,43 +269,35 @@ export function Timeline({ logs, timeZone }: { logs: ParsedLog[]; timeZone: stri
   if (allEntries.length === 0) return null;
 
   return (
-    <section className="card timeline-card" id="timeline">
-      <h3>Timeline <span className="chip">{allEntries.length} events · {visibleLanes.length} lanes</span></h3>
-      <details className="legend-help" open>
-        <summary>What am I looking at? — and how to use it</summary>
-        <p className="hint" style={{margin:'8px 0 6px'}}>
-          Each <strong>lane</strong> is one metric over time. A <strong>colored bar</strong> means the metric was active at that time;
-          gaps mean idle. The thin <span style={{color:'#4ade80',fontWeight:700}}>green line</span> is battery level (0–100%).
-          <strong> Wheel</strong> to zoom around the cursor, <strong>drag</strong> to pan, <strong>hover</strong> a bar for its exact value and duration.
-          Toggle lanes below or in the legend table to declutter. Colors ARE the meaning — see the key.
-        </p>
-      </details>
-
-      <div className="timeline-wrap" ref={wrapRef}>
+    <section className="timeline-card" id="timeline">
+      <div className="timeline-wrap" ref={wrapRef} style={{ marginTop: 12 }}>
         <canvas
           ref={canvasRef}
           className="timeline-canvas"
           onWheel={e => {
-            e.preventDefault(); if (!domain) return;
+            e.preventDefault();
             const { time } = xToTime(e.clientX);
             const factor = e.deltaY < 0 ? 0.8 : 1.25;
-            let min = time - (time - domain.min) * factor;
-            let max = time + (domain.max - time) * factor;
+            let min = time - (time - effDomain.min) * factor;
+            let max = time + (effDomain.max - time) * factor;
             if (max - min > (bounds.max - bounds.min) * 1.02) { min = bounds.min; max = bounds.max; }
-            setDomain({ min, max });
+            onDomainChange({ min, max });
           }}
-          onMouseDown={e => { if (!domain) return; dragRef.current = { x: e.clientX, min: domain.min, max: domain.max }; }}
+          onMouseDown={e => { dragRef.current = { x: e.clientX, min: effDomain.min, max: effDomain.max }; }}
           onMouseUp={() => { dragRef.current = null; }}
           onMouseLeave={() => { dragRef.current = null; setHover(null); setHoverLane(null); }}
+          onClick={e => {
+            const lane = laneAtY(e.clientY);
+            if (lane) setPinned(p => p === lane ? null : lane);
+          }}
           onMouseMove={e => {
-            if (!domain) return;
             const drag = dragRef.current;
             if (drag) {
               const rect = canvasRef.current?.getBoundingClientRect();
               const width = (rect?.width ?? 1) - MARGIN.left - MARGIN.right;
               const dx = e.clientX - drag.x;
               const shift = (dx / width) * (drag.max - drag.min);
-              setDomain({ min: drag.min - shift, max: drag.max - shift });
+              onDomainChange({ min: drag.min - shift, max: drag.max - shift });
               setHover(null); setHoverLane(null); return;
             }
             const laneName = laneAtY(e.clientY);
@@ -266,7 +305,6 @@ export function Timeline({ logs, timeZone }: { logs: ParsedLog[]; timeZone: stri
             const { time, px } = xToTime(e.clientX);
             if (px < MARGIN.left) { setHover(null); return; }
             let best: HistorianEntry | null = null;
-            // Prefer the hovered lane's entries, then fall back to all visible lanes
             const searchLanes: SeriesLane[] = laneName ? visibleLanes.filter(l => l.name === laneName) : visibleLanes;
             const pools: SeriesLane[][] = laneName ? [searchLanes, visibleLanes] : [searchLanes];
             for (const pool of pools) {
@@ -304,11 +342,11 @@ export function Timeline({ logs, timeZone }: { logs: ParsedLog[]; timeZone: stri
           </div>
         )}
       </div>
-      {levelEntries.length > 1 && <p className="hint">Green line: battery level 0–100%. Scroll to zoom, drag to pan. Hover any bar for what it means.</p>}
+      {pinned && <p className="hint" style={{ margin: '6px 0 0' }}>Pinned: <strong>{pinned}</strong> — click again to unpin. {domainKey !== 'Default' ? `Domain: ${domainKey}` : ''}</p>}
+      {regexp && <p className="hint" style={{ margin: '4px 0 0' }}>Regexp: <code>{regexp}</code> {regexpFilteredLanes ? `· ${visibleLanes.reduce((n,l)=>n+l.entries.length,0)} matches` : '· invalid'}</p>}
 
-      {/* Color schema / legend table */}
-      <h4 style={{marginTop:16}}>Color key — what each lane means <span className="chip">{lanes.length} series</span></h4>
-      <p className="hint">Color is the identity — the bar and the swatch are the same. Hover a row for the plain-English meaning. Click to show/hide the lane.</p>
+      <h4 style={{marginTop:16}}>Color key — what each lane means <span className="chip">{effectiveLanes.length} series</span></h4>
+      <p className="hint">Click the swatch or bar to pin/highlight. Click swatch row to toggle.</p>
       {legendGroups.map(([cat, group]) => (
         <div key={cat} style={{marginBottom:10}}>
           <div className="detail-title" style={{margin:'10px 0 4px'}}>{cat}</div>
@@ -318,10 +356,11 @@ export function Timeline({ logs, timeZone }: { logs: ParsedLog[]; timeZone: stri
               {group.sort((a,b) => a.name.localeCompare(b.name)).map(l => {
                 const meta = metaFor(l.name);
                 const on = l.on;
+                const isPinned = pinned === l.name;
                 return (
-                  <tr key={l.name} className={on ? undefined : 'row-muted'} title={meta.desc}>
-                    <td><span className="legend-swatch" style={{background: meta.color}} /></td>
-                    <td style={{fontWeight:600, color: on ? 'inherit' : '#93a0b8'}}>{l.name}</td>
+                  <tr key={l.name} className={on ? (isPinned ? 'row-selected' : undefined) : 'row-muted'} title={meta.desc}>
+                    <td><span className="legend-swatch" style={{background: meta.color, cursor:'pointer', outline: isPinned ? '2px solid #60a5fa' : undefined}} onClick={() => setPinned(p => p===l.name?null:l.name)} /></td>
+                    <td style={{fontWeight:600, color: on ? 'inherit' : '#93a0b8', cursor:'pointer'}} onClick={() => setPinned(p => p===l.name?null:l.name)}>{l.name}</td>
                     <td className="hint" style={{fontStyle:'normal', color:'#c7d2e8'}}>{meta.desc}</td>
                     <td className="count">{l.entries.length}</td>
                     <td><input type="checkbox" checked={on} onChange={() => setLanes(prev => prev.map(p => p.name===l.name ? {...p,on:!p.on}:p))} title={on ? 'Hide lane' : 'Show lane'} /></td>
@@ -334,11 +373,11 @@ export function Timeline({ logs, timeZone }: { logs: ParsedLog[]; timeZone: stri
       ))}
 
       <details className="series-menu" style={{marginTop:12}}>
-        <summary>Quick toggles ({lanes.filter(l => l.on).length}/{lanes.length} shown)</summary>
+        <summary>Quick toggles ({effectiveLanes.filter(l => l.on).length}/{effectiveLanes.length} shown)</summary>
         <div className="series-grid">
-          {lanes.map(l => (
+          {effectiveLanes.map(l => (
             <label key={l.name} className="check-row" title={metaFor(l.name).desc}>
-              <span className="legend-swatch legend-swatch-sm" style={{background: metaFor(l.name).color}} />
+              <span className="legend-swatch legend-swatch-sm" style={{background: metaFor(l.name).color, cursor:'pointer'}} onClick={() => setPinned(p => p===l.name?null:l.name)} />
               <input type="checkbox" checked={l.on} onChange={() => setLanes(prev => prev.map(p => (p.name === l.name ? { ...p, on: !p.on } : p)))} />
               {l.name} <span className="count">({l.entries.length})</span>
             </label>
