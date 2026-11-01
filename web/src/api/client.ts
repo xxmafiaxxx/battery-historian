@@ -1,5 +1,30 @@
 import type { AdbDevice, UploadResponse, UploadResponseCompare } from './types';
 
+export interface LiveReading {
+  serial: string;
+  timestampMs: number;
+  level: number;
+  voltageMv: number;
+  tempDeciC: number;
+  tempC: number;
+  status: number;
+  statusLabel: string;
+  health: number;
+  plugged: boolean;
+  acPowered: boolean;
+  usbPowered: boolean;
+  wirelessPowered: boolean;
+  present: boolean;
+  technology?: string;
+}
+
+/** Cheap poll of `dumpsys battery` — the live reading for the live chart. */
+export async function pollLiveBattery(serial: string): Promise<LiveReading> {
+  const res = await fetch(`/api/adb/live?serial=${encodeURIComponent(serial)}`);
+  if (!res.ok) throw new Error(await res.text());
+  return (await res.json()) as LiveReading;
+}
+
 /**
  * Lightweight fallback when `adb bugreport`'s dumpstatez service is down.
  * Collects `dumpsys batterystats --checkin` etc directly and analyzes that

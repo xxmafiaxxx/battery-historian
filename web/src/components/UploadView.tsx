@@ -3,6 +3,7 @@ import type { FormEvent } from 'react';
 import { listAdbDevices, pullBugreportFallback } from '../api/client';
 import type { AdbDevice } from '../api/types';
 import { click } from '../sound';
+import { LivePanel } from './LivePanel';
 
 interface Props {
   onSubmit: (input: {
@@ -30,6 +31,7 @@ export function UploadView({ onSubmit, onPull, onFallbackPull, busy, error }: Pr
   const [pulling, setPulling] = useState(false);
   const [fallbackBusy, setFallbackBusy] = useState(false);
   const [selectedSerial, setSelectedSerial] = useState('');
+  const [showLive, setShowLive] = useState(false);
   const bugreportRef = useRef<HTMLInputElement>(null);
   const bugreport2Ref = useRef<HTMLInputElement>(null);
   const kernelRef = useRef<HTMLInputElement>(null);
@@ -171,6 +173,24 @@ export function UploadView({ onSubmit, onPull, onFallbackPull, busy, error }: Pr
           </div>
         )}
       </section>
+
+      {/* Live readings — just ADB dumpsys battery polled every 1–5s */}
+      {pullable.length > 0 && (
+        <section className="adb-section" style={{ marginTop: 14 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+            <h3 style={{ margin: 0 }}>Live battery readings</h3>
+            <span className="hint">via <code>adb shell dumpsys battery</code> — no bugreport</span>
+            <button type="button" className="btn" onClick={() => { click(); setShowLive(v => !v); }} style={{ marginLeft: 'auto' }}>
+              {showLive ? '▾ Hide live chart' : '▶ Show live chart'}
+            </button>
+          </div>
+          {showLive && selectedSerial && (
+            <div style={{ marginTop: 12 }}>
+              <LivePanel serial={selectedSerial} timeZone={Intl.DateTimeFormat().resolvedOptions().timeZone ?? 'UTC'} />
+            </div>
+          )}
+        </section>
+      )}
 
       <div className="divider">or upload a file</div>
 
