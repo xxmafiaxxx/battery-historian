@@ -18,7 +18,6 @@ import (
 	"errors"
 	"math"
 	"reflect"
-	"strings"
 
 	"github.com/google/battery-historian/checkinparse"
 	bspb "github.com/google/battery-historian/pb/batterystats_proto"
@@ -201,22 +200,26 @@ func normalizeMessage(p proto.Message, totalTimeHour float64) proto.Message {
 		return nil
 	}
 	out := reflect.New(in.Type().Elem())
-	normalizeStruct(out.Elem(), in.Elem(), totalTimeHour, checkinparse.BatteryStatsIDMap[reflect.TypeOf(p)])
+	normalizeStruct(out.Elem(), in.Elem(), totalTimeHour, checkinparse.IDFieldNames(p))
 	return out.Interface().(proto.Message)
 }
 
 // normalizeStruct traverses a struct value and normalizes each field
-func normalizeStruct(out, in reflect.Value, totalTimeHour float64, ids map[int]bool) {
+func normalizeStruct(out, in reflect.Value, totalTimeHour float64, ids map[string]bool) {
 	for i := 0; i < in.NumField(); i++ {
-		if f := in.Type().Field(i); strings.HasPrefix(f.Name, "XXX_") || f.PkgPath != "" {
-			continue // skip XXX_ and unexported fields
+		f := in.Type().Field(i)
+		if f.PkgPath != "" || f.Type.Kind() != reflect.Ptr {
+			// Skip unexported fields and the generated proto internal state
+			// fields (state, sizeCache, unknownFields); every real proto2
+			// field is a pointer.
+			continue
 		}
 		fieldPtrV := in.Field(i)
 		if fieldPtrV.IsNil() {
 			continue
 		}
 		normV := reflect.New(fieldPtrV.Type().Elem())
-		normalizeValue(normV.Elem(), fieldPtrV.Elem(), in.String(), totalTimeHour, ids[i])
+		normalizeValue(normV.Elem(), fieldPtrV.Elem(), in.String(), totalTimeHour, ids[f.Name])
 		out.Field(i).Set(normV)
 	}
 }

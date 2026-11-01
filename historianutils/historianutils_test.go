@@ -44,8 +44,73 @@ func TestScrubPII(t *testing.T) {
 	}
 }
 
-func TestParseDurationWithDays(t *testing.T) {
+func TestServiceDumpRE(t *testing.T) {
 	tests := []struct {
+		desc       string
+		line       string
+		wantMatch  bool
+		wantSvc    string
+	}{
+		{
+			desc:      "Old style line (pre-Android 7)",
+			line:      "DUMP OF SERVICE sensorservice:",
+			wantMatch: true,
+			wantSvc:   "sensorservice",
+		},
+		{
+			desc:      "Old style line, battery",
+			line:      "DUMP OF SERVICE battery:",
+			wantMatch: true,
+			wantSvc:   "battery",
+		},
+		{
+			desc:      "Modern dash-wrapped header (Android 7+)",
+			line:      "------ DUMP OF SERVICE batterystats ------",
+			wantMatch: true,
+			wantSvc:   "batterystats",
+		},
+		{
+			desc:      "Modern dash-wrapped header, package",
+			line:      "------ DUMP OF SERVICE package ------",
+			wantMatch: true,
+			wantSvc:   "package",
+		},
+		{
+			desc:      "Modern header with leading indentation is trimmed by SubexpNames",
+			line:      "      ------ DUMP OF SERVICE appops ------",
+			wantMatch: true,
+			wantSvc:   "appops",
+		},
+		{
+			desc:      "Random dash header is not a service dump",
+			line:      "------ SYSTEM LOG ------",
+			wantMatch: false,
+		},
+		{
+			desc:      "Plain log line",
+			line:      "01-01 12:34:56.789 D/foo( 123): hello",
+			wantMatch: false,
+		},
+		{
+			desc:      "Incomplete dash header",
+			line:      "------ DUMP OF SERVICE",
+			wantMatch: false,
+		},
+	}
+
+	for _, test := range tests {
+		match, result := SubexpNames(ServiceDumpRE, test.line)
+		if match != test.wantMatch {
+			t.Errorf("%v: ServiceDumpRE MatchString(%q) = %v, want %v", test.desc, test.line, match, test.wantMatch)
+			continue
+		}
+		if match && result["service"] != test.wantSvc {
+			t.Errorf("%v: ServiceDumpRE(%q) captured service %q, want %q", test.desc, test.line, result["service"], test.wantSvc)
+		}
+	}
+}
+
+func TestParseDurationWithDays(t *testing.T) {	tests := []struct {
 		unparsedDur string
 		wantMs      int64
 		wantErr     bool

@@ -20,6 +20,7 @@ import (
 	"regexp"
 	"strings"
 	"testing"
+	"time"
 
 	usagepb "github.com/google/battery-historian/pb/usagestats_proto"
 	"google.golang.org/protobuf/proto"
@@ -745,4 +746,87 @@ func comparePackageList(got, want []*usagepb.PackageInfo) []string {
 	}
 
 	return diffs
+}
+
+// TestExtractAppsFromModernBugReport verifies that app extraction works on
+// bug reports from Android 7 and later, where service dumps are wrapped in
+// dash headers ("------ DUMP OF SERVICE x ------") instead of the old
+// "DUMP OF SERVICE x:" lines. Before the dual-format ServiceDumpRE, this
+// extraction silently returned nothing for every modern bug report.
+func TestExtractAppsFromModernBugReport(t *testing.T) {
+	input := strings.Join([]string{
+		"------ SYSTEM LOG ------",
+		"01-01 12:00:00.000 D/foo( 123): some log line",
+		// A package dump in the modern header style.
+		"------ DUMP OF SERVICE package ------",
+		"Database versions:",
+		"  SDK Version: internal=34 external=34",
+		"Packages:",
+		"  Package [com.google.android.youtube] (1cce8bc):",
+		"    userId=10089 gids=[3003, 1028, 1015]",
+		"    versionCode=1940395460 minSdk=21 targetSdk=34",
+		"    versionName=19.40.39",
+		"    firstInstallTime=2024-01-05 13:44:11",
+		"    lastUpdateTime=2024-09-12 08:10:41",
+		"  Package [com.android.settings] (3cfd0aa):",
+		"    userId=1000 gids=[]",
+		"    versionCode=34 targetSdk=34",
+		"    versionName=15",
+		"Hidden system packages:",
+		"  Package [com.android.hidden] (abcd):",
+		// An appops dump in the modern header style, after the package dump.
+		"------ DUMP OF SERVICE appops ------",
+		"Current AppOps Service state:",
+		"  Uid 1000:",
+		"    Package com.android.settings:",
+		"  Uid u0a89:",
+		"    Package com.google.android.youtube:",
+		"------ DUMP OF SERVICE batterystats ------",
+		// After the appops section: must be ignored.
+		"Package one.line.too.late:",
+	}, "\n")
+
+	pkgs, errs := ExtractAppsFromBugReport(input)
+	if len(errs) > 0 {
+		t.Errorf("parsing failed in %v", errs)
+	}
+	got := make(map[string]*usagepb.PackageInfo)
+	for _, p := range pkgs {
+		got[p.GetPkgName()] = p
+	}
+	yt := got["com.google.android.youtube"]
+	if yt == nil {
+		t.Fatalf("com.google.android.youtube not extracted from modern-format bug report; got %v", got)
+	}
+	if got, want := yt.GetUid(), int32(10089); got != want {
+		t.Errorf("youtube uid = %d, want %d", got, want)
+	}
+	if got, want := yt.GetVersionCode(), int32(1940395460); got != want {
+		t.Errorf("youtube versionCode = %d, want %d", got, want)
+	}
+	if got, want := yt.GetVersionName(), "19.40.39"; got != want {
+		t.Errorf("youtube versionName = %q, want %q", got, want)
+	}
+	// Install/update timestamps are parsed as UTC.
+	wantInstall := time.Date(2024, 1, 5, 13, 44, 11, 0, time.UTC).UnixNano() / int64(time.Millisecond)
+	if got := yt.GetFirstInstallTime(); got != wantInstall {
+		t.Errorf("youtube firstInstallTime = %d, want %d", got, wantInstall)
+	}
+	wantUpdate := time.Date(2024, 9, 12, 8, 10, 41, 0, time.UTC).UnixNano() / int64(time.Millisecond)
+	if got := yt.GetLastUpdateTime(); got != wantUpdate {
+		t.Errorf("youtube lastUpdateTime = %d, want %d", got, wantUpdate)
+	}
+	// Settings is present in both the package dump and the appops dump; the
+	// package dump data must win and the appops entry must not duplicate it.
+	if n := len(got); n != 2 {
+		t.Errorf("expected exactly 2 packages (youtube, settings), got %d: %v", n, got)
+	}
+	if s := got["com.android.settings"]; s == nil {
+		t.Errorf("com.android.settings not extracted")
+	} else if got, want := s.GetUid(), int32(1000); got != want {
+		t.Errorf("settings uid = %d, want %d", got, want)
+	}
+	if got := got["one.line.too.late"]; got != nil {
+		t.Errorf("parsed package after the last section: %v", got)
+	}
 }

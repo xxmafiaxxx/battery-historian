@@ -29,7 +29,10 @@ import (
 
 var (
 	// ServiceDumpRE is a regular expression to match the beginning of a service dump.
-	ServiceDumpRE = regexp.MustCompile(`^DUMP\s+OF\s+SERVICE\s+(?P<service>\S+):`)
+	// Bug reports up through Android 6 use the line "DUMP OF SERVICE <service>:".
+	// From Android 7 onwards, dumpstate wraps every section in dash headers:
+	// "------ DUMP OF SERVICE <service> ------". Both forms are matched.
+	ServiceDumpRE = regexp.MustCompile(`^(?:-{4,}\s+)?DUMP\s+OF\s+SERVICE\s+(?P<service>\S+?):?\s*(?:-{4,})?\s*$`)
 
 	// piiEmailRE is a regular expression to match any PII string of the form abc@xxx.yyy.
 	piiEmailRE = regexp.MustCompile(`(?P<prefix>\S+/)?` + `(?P<account>\S+)` + `@` + `(?P<suffix>\S+\.\S+)`)

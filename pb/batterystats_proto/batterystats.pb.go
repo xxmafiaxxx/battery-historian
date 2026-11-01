@@ -172,7 +172,7 @@ func (x *BatteryStats_App_UserActivity_Name) UnmarshalJSON(b []byte) error {
 
 // Deprecated: Use BatteryStats_App_UserActivity_Name.Descriptor instead.
 func (BatteryStats_App_UserActivity_Name) EnumDescriptor() ([]byte, []int) {
-	return file_pb_batterystats_proto_batterystats_proto_rawDescGZIP(), []int{0, 0, 15, 0}
+	return file_pb_batterystats_proto_batterystats_proto_rawDescGZIP(), []int{0, 0, 16, 0}
 }
 
 type BatteryStats_System_BluetoothState_Name int32
@@ -1311,12 +1311,13 @@ type BatteryStats_App struct {
 	Apk       *BatteryStats_App_Apk   `protobuf:"bytes,4,opt,name=apk" json:"apk,omitempty"`      // Aggregate of all sub-child.apk values.
 	Audio     *BatteryStats_App_Audio `protobuf:"bytes,19,opt,name=audio" json:"audio,omitempty"` // aud.
 	// Idle for bluetooth is associated with scanning.
-	BluetoothController *BatteryStats_ControllerActivity `protobuf:"bytes,25,opt,name=bluetooth_controller,json=bluetoothController" json:"bluetooth_controller,omitempty"` // ble
-	BluetoothMisc       *BatteryStats_App_BluetoothMisc  `protobuf:"bytes,28,opt,name=bluetooth_misc,json=bluetoothMisc" json:"bluetooth_misc,omitempty"`                   // blem
-	Camera              *BatteryStats_App_Camera         `protobuf:"bytes,20,opt,name=camera" json:"camera,omitempty"`                                                      // cam.
-	Cpu                 *BatteryStats_App_Cpu            `protobuf:"bytes,23,opt,name=cpu" json:"cpu,omitempty"`                                                            // cpu.
-	Flashlight          *BatteryStats_App_Flashlight     `protobuf:"bytes,21,opt,name=flashlight" json:"flashlight,omitempty"`                                              // fla.
-	Foreground          *BatteryStats_App_Foreground     `protobuf:"bytes,5,opt,name=foreground" json:"foreground,omitempty"`                                               // fg.
+	BluetoothController *BatteryStats_ControllerActivity    `protobuf:"bytes,25,opt,name=bluetooth_controller,json=bluetoothController" json:"bluetooth_controller,omitempty"` // ble
+	BluetoothMisc       *BatteryStats_App_BluetoothMisc     `protobuf:"bytes,28,opt,name=bluetooth_misc,json=bluetoothMisc" json:"bluetooth_misc,omitempty"`                   // blem
+	Camera              *BatteryStats_App_Camera            `protobuf:"bytes,20,opt,name=camera" json:"camera,omitempty"`                                                      // cam.
+	Cpu                 *BatteryStats_App_Cpu               `protobuf:"bytes,23,opt,name=cpu" json:"cpu,omitempty"`                                                            // cpu.
+	Flashlight          *BatteryStats_App_Flashlight        `protobuf:"bytes,21,opt,name=flashlight" json:"flashlight,omitempty"`                                              // fla.
+	Foreground          *BatteryStats_App_Foreground        `protobuf:"bytes,5,opt,name=foreground" json:"foreground,omitempty"`                                               // fg.
+	ForegroundService   *BatteryStats_App_ForegroundService `protobuf:"bytes,31,opt,name=foreground_service,json=foregroundService" json:"foreground_service,omitempty"`       // fgs (BatteryStats checkin v22+).
 	// The modem controller doesn't provide a mechanism for determining when an
 	// app has the modem active but is not transmitting data, so there's no way
 	// to idle modem time to a specific UID, hence, idle time will always be 0
@@ -1469,6 +1470,13 @@ func (x *BatteryStats_App) GetFlashlight() *BatteryStats_App_Flashlight {
 func (x *BatteryStats_App) GetForeground() *BatteryStats_App_Foreground {
 	if x != nil {
 		return x.Foreground
+	}
+	return nil
+}
+
+func (x *BatteryStats_App) GetForegroundService() *BatteryStats_App_ForegroundService {
+	if x != nil {
+		return x.ForegroundService
 	}
 	return nil
 }
@@ -1666,22 +1674,23 @@ type BatteryStats_System struct {
 	GlobalBluetooth *BatteryStats_System_GlobalBluetooth `protobuf:"bytes,20,opt,name=global_bluetooth,json=globalBluetooth" json:"global_bluetooth,omitempty"` // gble pre report_version 17
 	// tx_time and power were swapped during report version 17, so they cannot
 	// be trusted in version 17.
-	GlobalBluetoothController *BatteryStats_ControllerActivity           `protobuf:"bytes,22,opt,name=global_bluetooth_controller,json=globalBluetoothController" json:"global_bluetooth_controller,omitempty"` // gble post report_version 17
-	GlobalModemController     *BatteryStats_ControllerActivity           `protobuf:"bytes,23,opt,name=global_modem_controller,json=globalModemController" json:"global_modem_controller,omitempty"`             // gmcd
-	GlobalNetwork             *BatteryStats_System_GlobalNetwork         `protobuf:"bytes,6,opt,name=global_network,json=globalNetwork" json:"global_network,omitempty"`                                        // gn.
-	GlobalWifi                *BatteryStats_System_GlobalWifi            `protobuf:"bytes,21,opt,name=global_wifi,json=globalWifi" json:"global_wifi,omitempty"`                                                // gwfl
-	GlobalWifiController      *BatteryStats_ControllerActivity           `protobuf:"bytes,24,opt,name=global_wifi_controller,json=globalWifiController" json:"global_wifi_controller,omitempty"`                // gwfcd
-	KernelWakelock            []*BatteryStats_System_KernelWakelock      `protobuf:"bytes,7,rep,name=kernel_wakelock,json=kernelWakelock" json:"kernel_wakelock,omitempty"`                                     // kwl.
-	Misc                      *BatteryStats_System_Misc                  `protobuf:"bytes,8,opt,name=misc" json:"misc,omitempty"`                                                                               // m.
-	PowerUseItem              []*BatteryStats_System_PowerUseItem        `protobuf:"bytes,9,rep,name=power_use_item,json=powerUseItem" json:"power_use_item,omitempty"`                                         // pwi.
-	PowerUseSummary           *BatteryStats_System_PowerUseSummary       `protobuf:"bytes,10,opt,name=power_use_summary,json=powerUseSummary" json:"power_use_summary,omitempty"`                               // pws.
-	ScreenBrightness          []*BatteryStats_System_ScreenBrightness    `protobuf:"bytes,11,rep,name=screen_brightness,json=screenBrightness" json:"screen_brightness,omitempty"`                              // br.
-	SignalScanningTime        *BatteryStats_System_SignalScanningTime    `protobuf:"bytes,12,opt,name=signal_scanning_time,json=signalScanningTime" json:"signal_scanning_time,omitempty"`                      // sst.
-	SignalStrength            []*BatteryStats_System_SignalStrength      `protobuf:"bytes,13,rep,name=signal_strength,json=signalStrength" json:"signal_strength,omitempty"`                                    // sgt & sgc.
-	WakeupReason              []*BatteryStats_System_WakeupReason        `protobuf:"bytes,14,rep,name=wakeup_reason,json=wakeupReason" json:"wakeup_reason,omitempty"`                                          // wr.
-	WifiSignalStrength        []*BatteryStats_System_WifiSignalStrength  `protobuf:"bytes,16,rep,name=wifi_signal_strength,json=wifiSignalStrength" json:"wifi_signal_strength,omitempty"`                      // wsgt & wsgc.
-	WifiSupplicantState       []*BatteryStats_System_WifiSupplicantState `protobuf:"bytes,17,rep,name=wifi_supplicant_state,json=wifiSupplicantState" json:"wifi_supplicant_state,omitempty"`                   // wsst & wssc.
-	WifiState                 []*BatteryStats_System_WifiState           `protobuf:"bytes,15,rep,name=wifi_state,json=wifiState" json:"wifi_state,omitempty"`                                                   // wst & wsc.
+	GlobalBluetoothController *BatteryStats_ControllerActivity            `protobuf:"bytes,22,opt,name=global_bluetooth_controller,json=globalBluetoothController" json:"global_bluetooth_controller,omitempty"` // gble post report_version 17
+	GlobalModemController     *BatteryStats_ControllerActivity            `protobuf:"bytes,23,opt,name=global_modem_controller,json=globalModemController" json:"global_modem_controller,omitempty"`             // gmcd
+	GlobalNetwork             *BatteryStats_System_GlobalNetwork          `protobuf:"bytes,6,opt,name=global_network,json=globalNetwork" json:"global_network,omitempty"`                                        // gn.
+	GlobalWifi                *BatteryStats_System_GlobalWifi             `protobuf:"bytes,21,opt,name=global_wifi,json=globalWifi" json:"global_wifi,omitempty"`                                                // gwfl
+	GlobalWifiController      *BatteryStats_ControllerActivity            `protobuf:"bytes,24,opt,name=global_wifi_controller,json=globalWifiController" json:"global_wifi_controller,omitempty"`                // gwfcd
+	KernelWakelock            []*BatteryStats_System_KernelWakelock       `protobuf:"bytes,7,rep,name=kernel_wakelock,json=kernelWakelock" json:"kernel_wakelock,omitempty"`                                     // kwl.
+	Misc                      *BatteryStats_System_Misc                   `protobuf:"bytes,8,opt,name=misc" json:"misc,omitempty"`                                                                               // m.
+	PowerUseItem              []*BatteryStats_System_PowerUseItem         `protobuf:"bytes,9,rep,name=power_use_item,json=powerUseItem" json:"power_use_item,omitempty"`                                         // pwi.
+	PowerUseSummary           *BatteryStats_System_PowerUseSummary        `protobuf:"bytes,10,opt,name=power_use_summary,json=powerUseSummary" json:"power_use_summary,omitempty"`                               // pws.
+	ScreenBrightness          []*BatteryStats_System_ScreenBrightness     `protobuf:"bytes,11,rep,name=screen_brightness,json=screenBrightness" json:"screen_brightness,omitempty"`                              // br.
+	SignalScanningTime        *BatteryStats_System_SignalScanningTime     `protobuf:"bytes,12,opt,name=signal_scanning_time,json=signalScanningTime" json:"signal_scanning_time,omitempty"`                      // sst.
+	SignalStrength            []*BatteryStats_System_SignalStrength       `protobuf:"bytes,13,rep,name=signal_strength,json=signalStrength" json:"signal_strength,omitempty"`                                    // sgt & sgc.
+	WakeupReason              []*BatteryStats_System_WakeupReason         `protobuf:"bytes,14,rep,name=wakeup_reason,json=wakeupReason" json:"wakeup_reason,omitempty"`                                          // wr.
+	WifiSignalStrength        []*BatteryStats_System_WifiSignalStrength   `protobuf:"bytes,16,rep,name=wifi_signal_strength,json=wifiSignalStrength" json:"wifi_signal_strength,omitempty"`                      // wsgt & wsgc.
+	WifiSupplicantState       []*BatteryStats_System_WifiSupplicantState  `protobuf:"bytes,17,rep,name=wifi_supplicant_state,json=wifiSupplicantState" json:"wifi_supplicant_state,omitempty"`                   // wsst & wssc.
+	WifiState                 []*BatteryStats_System_WifiState            `protobuf:"bytes,15,rep,name=wifi_state,json=wifiState" json:"wifi_state,omitempty"`                                                   // wst & wsc.
+	ResourcePowerManager      []*BatteryStats_System_ResourcePowerManager `protobuf:"bytes,27,rep,name=resource_power_manager,json=resourcePowerManager" json:"resource_power_manager,omitempty"`                // rpm.
 	unknownFields             protoimpl.UnknownFields
 	sizeCache                 protoimpl.SizeCache
 }
@@ -1896,6 +1905,13 @@ func (x *BatteryStats_System) GetWifiSupplicantState() []*BatteryStats_System_Wi
 func (x *BatteryStats_System) GetWifiState() []*BatteryStats_System_WifiState {
 	if x != nil {
 		return x.WifiState
+	}
+	return nil
+}
+
+func (x *BatteryStats_System) GetResourcePowerManager() []*BatteryStats_System_ResourcePowerManager {
+	if x != nil {
+		return x.ResourcePowerManager
 	}
 	return nil
 }
@@ -2405,6 +2421,60 @@ func (x *BatteryStats_App_Foreground) GetCount() float32 {
 	return 0
 }
 
+type BatteryStats_App_ForegroundService struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Duration spent running a foreground service.
+	TotalTimeMsec *float32 `protobuf:"fixed32,1,opt,name=total_time_msec,json=totalTimeMsec" json:"total_time_msec,omitempty"`
+	// #times.
+	Count         *float32 `protobuf:"fixed32,2,opt,name=count" json:"count,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *BatteryStats_App_ForegroundService) Reset() {
+	*x = BatteryStats_App_ForegroundService{}
+	mi := &file_pb_batterystats_proto_batterystats_proto_msgTypes[12]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *BatteryStats_App_ForegroundService) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*BatteryStats_App_ForegroundService) ProtoMessage() {}
+
+func (x *BatteryStats_App_ForegroundService) ProtoReflect() protoreflect.Message {
+	mi := &file_pb_batterystats_proto_batterystats_proto_msgTypes[12]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use BatteryStats_App_ForegroundService.ProtoReflect.Descriptor instead.
+func (*BatteryStats_App_ForegroundService) Descriptor() ([]byte, []int) {
+	return file_pb_batterystats_proto_batterystats_proto_rawDescGZIP(), []int{0, 0, 8}
+}
+
+func (x *BatteryStats_App_ForegroundService) GetTotalTimeMsec() float32 {
+	if x != nil && x.TotalTimeMsec != nil {
+		return *x.TotalTimeMsec
+	}
+	return 0
+}
+
+func (x *BatteryStats_App_ForegroundService) GetCount() float32 {
+	if x != nil && x.Count != nil {
+		return *x.Count
+	}
+	return 0
+}
+
 type BatteryStats_App_Network struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// Mobile data traffic (total, background + foreground).
@@ -2444,7 +2514,7 @@ type BatteryStats_App_Network struct {
 
 func (x *BatteryStats_App_Network) Reset() {
 	*x = BatteryStats_App_Network{}
-	mi := &file_pb_batterystats_proto_batterystats_proto_msgTypes[12]
+	mi := &file_pb_batterystats_proto_batterystats_proto_msgTypes[13]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2456,7 +2526,7 @@ func (x *BatteryStats_App_Network) String() string {
 func (*BatteryStats_App_Network) ProtoMessage() {}
 
 func (x *BatteryStats_App_Network) ProtoReflect() protoreflect.Message {
-	mi := &file_pb_batterystats_proto_batterystats_proto_msgTypes[12]
+	mi := &file_pb_batterystats_proto_batterystats_proto_msgTypes[13]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2469,7 +2539,7 @@ func (x *BatteryStats_App_Network) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use BatteryStats_App_Network.ProtoReflect.Descriptor instead.
 func (*BatteryStats_App_Network) Descriptor() ([]byte, []int) {
-	return file_pb_batterystats_proto_batterystats_proto_rawDescGZIP(), []int{0, 0, 8}
+	return file_pb_batterystats_proto_batterystats_proto_rawDescGZIP(), []int{0, 0, 9}
 }
 
 func (x *BatteryStats_App_Network) GetMobileBytesRx() float32 {
@@ -2637,7 +2707,7 @@ type BatteryStats_App_PowerUseItem struct {
 
 func (x *BatteryStats_App_PowerUseItem) Reset() {
 	*x = BatteryStats_App_PowerUseItem{}
-	mi := &file_pb_batterystats_proto_batterystats_proto_msgTypes[13]
+	mi := &file_pb_batterystats_proto_batterystats_proto_msgTypes[14]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2649,7 +2719,7 @@ func (x *BatteryStats_App_PowerUseItem) String() string {
 func (*BatteryStats_App_PowerUseItem) ProtoMessage() {}
 
 func (x *BatteryStats_App_PowerUseItem) ProtoReflect() protoreflect.Message {
-	mi := &file_pb_batterystats_proto_batterystats_proto_msgTypes[13]
+	mi := &file_pb_batterystats_proto_batterystats_proto_msgTypes[14]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2662,7 +2732,7 @@ func (x *BatteryStats_App_PowerUseItem) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use BatteryStats_App_PowerUseItem.ProtoReflect.Descriptor instead.
 func (*BatteryStats_App_PowerUseItem) Descriptor() ([]byte, []int) {
-	return file_pb_batterystats_proto_batterystats_proto_rawDescGZIP(), []int{0, 0, 9}
+	return file_pb_batterystats_proto_batterystats_proto_rawDescGZIP(), []int{0, 0, 10}
 }
 
 func (x *BatteryStats_App_PowerUseItem) GetComputedPowerMah() float32 {
@@ -2694,7 +2764,7 @@ type BatteryStats_App_Process struct {
 
 func (x *BatteryStats_App_Process) Reset() {
 	*x = BatteryStats_App_Process{}
-	mi := &file_pb_batterystats_proto_batterystats_proto_msgTypes[14]
+	mi := &file_pb_batterystats_proto_batterystats_proto_msgTypes[15]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2706,7 +2776,7 @@ func (x *BatteryStats_App_Process) String() string {
 func (*BatteryStats_App_Process) ProtoMessage() {}
 
 func (x *BatteryStats_App_Process) ProtoReflect() protoreflect.Message {
-	mi := &file_pb_batterystats_proto_batterystats_proto_msgTypes[14]
+	mi := &file_pb_batterystats_proto_batterystats_proto_msgTypes[15]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2719,7 +2789,7 @@ func (x *BatteryStats_App_Process) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use BatteryStats_App_Process.ProtoReflect.Descriptor instead.
 func (*BatteryStats_App_Process) Descriptor() ([]byte, []int) {
-	return file_pb_batterystats_proto_batterystats_proto_rawDescGZIP(), []int{0, 0, 10}
+	return file_pb_batterystats_proto_batterystats_proto_rawDescGZIP(), []int{0, 0, 11}
 }
 
 func (x *BatteryStats_App_Process) GetName() string {
@@ -2789,7 +2859,7 @@ type BatteryStats_App_ScheduledJob struct {
 
 func (x *BatteryStats_App_ScheduledJob) Reset() {
 	*x = BatteryStats_App_ScheduledJob{}
-	mi := &file_pb_batterystats_proto_batterystats_proto_msgTypes[15]
+	mi := &file_pb_batterystats_proto_batterystats_proto_msgTypes[16]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2801,7 +2871,7 @@ func (x *BatteryStats_App_ScheduledJob) String() string {
 func (*BatteryStats_App_ScheduledJob) ProtoMessage() {}
 
 func (x *BatteryStats_App_ScheduledJob) ProtoReflect() protoreflect.Message {
-	mi := &file_pb_batterystats_proto_batterystats_proto_msgTypes[15]
+	mi := &file_pb_batterystats_proto_batterystats_proto_msgTypes[16]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2814,7 +2884,7 @@ func (x *BatteryStats_App_ScheduledJob) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use BatteryStats_App_ScheduledJob.ProtoReflect.Descriptor instead.
 func (*BatteryStats_App_ScheduledJob) Descriptor() ([]byte, []int) {
-	return file_pb_batterystats_proto_batterystats_proto_rawDescGZIP(), []int{0, 0, 11}
+	return file_pb_batterystats_proto_batterystats_proto_rawDescGZIP(), []int{0, 0, 12}
 }
 
 func (x *BatteryStats_App_ScheduledJob) GetName() string {
@@ -2880,7 +2950,7 @@ type BatteryStats_App_Sensor struct {
 
 func (x *BatteryStats_App_Sensor) Reset() {
 	*x = BatteryStats_App_Sensor{}
-	mi := &file_pb_batterystats_proto_batterystats_proto_msgTypes[16]
+	mi := &file_pb_batterystats_proto_batterystats_proto_msgTypes[17]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2892,7 +2962,7 @@ func (x *BatteryStats_App_Sensor) String() string {
 func (*BatteryStats_App_Sensor) ProtoMessage() {}
 
 func (x *BatteryStats_App_Sensor) ProtoReflect() protoreflect.Message {
-	mi := &file_pb_batterystats_proto_batterystats_proto_msgTypes[16]
+	mi := &file_pb_batterystats_proto_batterystats_proto_msgTypes[17]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2905,7 +2975,7 @@ func (x *BatteryStats_App_Sensor) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use BatteryStats_App_Sensor.ProtoReflect.Descriptor instead.
 func (*BatteryStats_App_Sensor) Descriptor() ([]byte, []int) {
-	return file_pb_batterystats_proto_batterystats_proto_rawDescGZIP(), []int{0, 0, 12}
+	return file_pb_batterystats_proto_batterystats_proto_rawDescGZIP(), []int{0, 0, 13}
 }
 
 func (x *BatteryStats_App_Sensor) GetNumber() int32 {
@@ -2983,7 +3053,7 @@ type BatteryStats_App_StateTime struct {
 
 func (x *BatteryStats_App_StateTime) Reset() {
 	*x = BatteryStats_App_StateTime{}
-	mi := &file_pb_batterystats_proto_batterystats_proto_msgTypes[17]
+	mi := &file_pb_batterystats_proto_batterystats_proto_msgTypes[18]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2995,7 +3065,7 @@ func (x *BatteryStats_App_StateTime) String() string {
 func (*BatteryStats_App_StateTime) ProtoMessage() {}
 
 func (x *BatteryStats_App_StateTime) ProtoReflect() protoreflect.Message {
-	mi := &file_pb_batterystats_proto_batterystats_proto_msgTypes[17]
+	mi := &file_pb_batterystats_proto_batterystats_proto_msgTypes[18]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3008,7 +3078,7 @@ func (x *BatteryStats_App_StateTime) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use BatteryStats_App_StateTime.ProtoReflect.Descriptor instead.
 func (*BatteryStats_App_StateTime) Descriptor() ([]byte, []int) {
-	return file_pb_batterystats_proto_batterystats_proto_rawDescGZIP(), []int{0, 0, 13}
+	return file_pb_batterystats_proto_batterystats_proto_rawDescGZIP(), []int{0, 0, 14}
 }
 
 func (x *BatteryStats_App_StateTime) GetForegroundTimeMsec() float32 {
@@ -3079,7 +3149,7 @@ type BatteryStats_App_Sync struct {
 
 func (x *BatteryStats_App_Sync) Reset() {
 	*x = BatteryStats_App_Sync{}
-	mi := &file_pb_batterystats_proto_batterystats_proto_msgTypes[18]
+	mi := &file_pb_batterystats_proto_batterystats_proto_msgTypes[19]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3091,7 +3161,7 @@ func (x *BatteryStats_App_Sync) String() string {
 func (*BatteryStats_App_Sync) ProtoMessage() {}
 
 func (x *BatteryStats_App_Sync) ProtoReflect() protoreflect.Message {
-	mi := &file_pb_batterystats_proto_batterystats_proto_msgTypes[18]
+	mi := &file_pb_batterystats_proto_batterystats_proto_msgTypes[19]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3104,7 +3174,7 @@ func (x *BatteryStats_App_Sync) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use BatteryStats_App_Sync.ProtoReflect.Descriptor instead.
 func (*BatteryStats_App_Sync) Descriptor() ([]byte, []int) {
-	return file_pb_batterystats_proto_batterystats_proto_rawDescGZIP(), []int{0, 0, 14}
+	return file_pb_batterystats_proto_batterystats_proto_rawDescGZIP(), []int{0, 0, 15}
 }
 
 func (x *BatteryStats_App_Sync) GetName() string {
@@ -3152,7 +3222,7 @@ type BatteryStats_App_UserActivity struct {
 
 func (x *BatteryStats_App_UserActivity) Reset() {
 	*x = BatteryStats_App_UserActivity{}
-	mi := &file_pb_batterystats_proto_batterystats_proto_msgTypes[19]
+	mi := &file_pb_batterystats_proto_batterystats_proto_msgTypes[20]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3164,7 +3234,7 @@ func (x *BatteryStats_App_UserActivity) String() string {
 func (*BatteryStats_App_UserActivity) ProtoMessage() {}
 
 func (x *BatteryStats_App_UserActivity) ProtoReflect() protoreflect.Message {
-	mi := &file_pb_batterystats_proto_batterystats_proto_msgTypes[19]
+	mi := &file_pb_batterystats_proto_batterystats_proto_msgTypes[20]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3177,7 +3247,7 @@ func (x *BatteryStats_App_UserActivity) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use BatteryStats_App_UserActivity.ProtoReflect.Descriptor instead.
 func (*BatteryStats_App_UserActivity) Descriptor() ([]byte, []int) {
-	return file_pb_batterystats_proto_batterystats_proto_rawDescGZIP(), []int{0, 0, 15}
+	return file_pb_batterystats_proto_batterystats_proto_rawDescGZIP(), []int{0, 0, 16}
 }
 
 func (x *BatteryStats_App_UserActivity) GetName() BatteryStats_App_UserActivity_Name {
@@ -3206,7 +3276,7 @@ type BatteryStats_App_Vibrator struct {
 
 func (x *BatteryStats_App_Vibrator) Reset() {
 	*x = BatteryStats_App_Vibrator{}
-	mi := &file_pb_batterystats_proto_batterystats_proto_msgTypes[20]
+	mi := &file_pb_batterystats_proto_batterystats_proto_msgTypes[21]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3218,7 +3288,7 @@ func (x *BatteryStats_App_Vibrator) String() string {
 func (*BatteryStats_App_Vibrator) ProtoMessage() {}
 
 func (x *BatteryStats_App_Vibrator) ProtoReflect() protoreflect.Message {
-	mi := &file_pb_batterystats_proto_batterystats_proto_msgTypes[20]
+	mi := &file_pb_batterystats_proto_batterystats_proto_msgTypes[21]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3231,7 +3301,7 @@ func (x *BatteryStats_App_Vibrator) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use BatteryStats_App_Vibrator.ProtoReflect.Descriptor instead.
 func (*BatteryStats_App_Vibrator) Descriptor() ([]byte, []int) {
-	return file_pb_batterystats_proto_batterystats_proto_rawDescGZIP(), []int{0, 0, 16}
+	return file_pb_batterystats_proto_batterystats_proto_rawDescGZIP(), []int{0, 0, 17}
 }
 
 func (x *BatteryStats_App_Vibrator) GetTotalTimeMsec() float32 {
@@ -3260,7 +3330,7 @@ type BatteryStats_App_Video struct {
 
 func (x *BatteryStats_App_Video) Reset() {
 	*x = BatteryStats_App_Video{}
-	mi := &file_pb_batterystats_proto_batterystats_proto_msgTypes[21]
+	mi := &file_pb_batterystats_proto_batterystats_proto_msgTypes[22]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3272,7 +3342,7 @@ func (x *BatteryStats_App_Video) String() string {
 func (*BatteryStats_App_Video) ProtoMessage() {}
 
 func (x *BatteryStats_App_Video) ProtoReflect() protoreflect.Message {
-	mi := &file_pb_batterystats_proto_batterystats_proto_msgTypes[21]
+	mi := &file_pb_batterystats_proto_batterystats_proto_msgTypes[22]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3285,7 +3355,7 @@ func (x *BatteryStats_App_Video) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use BatteryStats_App_Video.ProtoReflect.Descriptor instead.
 func (*BatteryStats_App_Video) Descriptor() ([]byte, []int) {
-	return file_pb_batterystats_proto_batterystats_proto_rawDescGZIP(), []int{0, 0, 17}
+	return file_pb_batterystats_proto_batterystats_proto_rawDescGZIP(), []int{0, 0, 18}
 }
 
 func (x *BatteryStats_App_Video) GetTotalTimeMsec() float32 {
@@ -3367,7 +3437,7 @@ type BatteryStats_App_Wakelock struct {
 
 func (x *BatteryStats_App_Wakelock) Reset() {
 	*x = BatteryStats_App_Wakelock{}
-	mi := &file_pb_batterystats_proto_batterystats_proto_msgTypes[22]
+	mi := &file_pb_batterystats_proto_batterystats_proto_msgTypes[23]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3379,7 +3449,7 @@ func (x *BatteryStats_App_Wakelock) String() string {
 func (*BatteryStats_App_Wakelock) ProtoMessage() {}
 
 func (x *BatteryStats_App_Wakelock) ProtoReflect() protoreflect.Message {
-	mi := &file_pb_batterystats_proto_batterystats_proto_msgTypes[22]
+	mi := &file_pb_batterystats_proto_batterystats_proto_msgTypes[23]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3392,7 +3462,7 @@ func (x *BatteryStats_App_Wakelock) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use BatteryStats_App_Wakelock.ProtoReflect.Descriptor instead.
 func (*BatteryStats_App_Wakelock) Descriptor() ([]byte, []int) {
-	return file_pb_batterystats_proto_batterystats_proto_rawDescGZIP(), []int{0, 0, 18}
+	return file_pb_batterystats_proto_batterystats_proto_rawDescGZIP(), []int{0, 0, 19}
 }
 
 func (x *BatteryStats_App_Wakelock) GetName() string {
@@ -3517,7 +3587,7 @@ type BatteryStats_App_WakeupAlarm struct {
 
 func (x *BatteryStats_App_WakeupAlarm) Reset() {
 	*x = BatteryStats_App_WakeupAlarm{}
-	mi := &file_pb_batterystats_proto_batterystats_proto_msgTypes[23]
+	mi := &file_pb_batterystats_proto_batterystats_proto_msgTypes[24]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3529,7 +3599,7 @@ func (x *BatteryStats_App_WakeupAlarm) String() string {
 func (*BatteryStats_App_WakeupAlarm) ProtoMessage() {}
 
 func (x *BatteryStats_App_WakeupAlarm) ProtoReflect() protoreflect.Message {
-	mi := &file_pb_batterystats_proto_batterystats_proto_msgTypes[23]
+	mi := &file_pb_batterystats_proto_batterystats_proto_msgTypes[24]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3542,7 +3612,7 @@ func (x *BatteryStats_App_WakeupAlarm) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use BatteryStats_App_WakeupAlarm.ProtoReflect.Descriptor instead.
 func (*BatteryStats_App_WakeupAlarm) Descriptor() ([]byte, []int) {
-	return file_pb_batterystats_proto_batterystats_proto_rawDescGZIP(), []int{0, 0, 19}
+	return file_pb_batterystats_proto_batterystats_proto_rawDescGZIP(), []int{0, 0, 20}
 }
 
 func (x *BatteryStats_App_WakeupAlarm) GetName() string {
@@ -3595,7 +3665,7 @@ type BatteryStats_App_Wifi struct {
 
 func (x *BatteryStats_App_Wifi) Reset() {
 	*x = BatteryStats_App_Wifi{}
-	mi := &file_pb_batterystats_proto_batterystats_proto_msgTypes[24]
+	mi := &file_pb_batterystats_proto_batterystats_proto_msgTypes[25]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3607,7 +3677,7 @@ func (x *BatteryStats_App_Wifi) String() string {
 func (*BatteryStats_App_Wifi) ProtoMessage() {}
 
 func (x *BatteryStats_App_Wifi) ProtoReflect() protoreflect.Message {
-	mi := &file_pb_batterystats_proto_batterystats_proto_msgTypes[24]
+	mi := &file_pb_batterystats_proto_batterystats_proto_msgTypes[25]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3620,7 +3690,7 @@ func (x *BatteryStats_App_Wifi) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use BatteryStats_App_Wifi.ProtoReflect.Descriptor instead.
 func (*BatteryStats_App_Wifi) Descriptor() ([]byte, []int) {
-	return file_pb_batterystats_proto_batterystats_proto_rawDescGZIP(), []int{0, 0, 20}
+	return file_pb_batterystats_proto_batterystats_proto_rawDescGZIP(), []int{0, 0, 21}
 }
 
 func (x *BatteryStats_App_Wifi) GetFullWifiLockTimeMsec() float32 {
@@ -3712,7 +3782,7 @@ type BatteryStats_App_Apk_Service struct {
 
 func (x *BatteryStats_App_Apk_Service) Reset() {
 	*x = BatteryStats_App_Apk_Service{}
-	mi := &file_pb_batterystats_proto_batterystats_proto_msgTypes[25]
+	mi := &file_pb_batterystats_proto_batterystats_proto_msgTypes[26]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3724,7 +3794,7 @@ func (x *BatteryStats_App_Apk_Service) String() string {
 func (*BatteryStats_App_Apk_Service) ProtoMessage() {}
 
 func (x *BatteryStats_App_Apk_Service) ProtoReflect() protoreflect.Message {
-	mi := &file_pb_batterystats_proto_batterystats_proto_msgTypes[25]
+	mi := &file_pb_batterystats_proto_batterystats_proto_msgTypes[26]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3783,7 +3853,7 @@ type BatteryStats_ControllerActivity_TxLevel struct {
 
 func (x *BatteryStats_ControllerActivity_TxLevel) Reset() {
 	*x = BatteryStats_ControllerActivity_TxLevel{}
-	mi := &file_pb_batterystats_proto_batterystats_proto_msgTypes[26]
+	mi := &file_pb_batterystats_proto_batterystats_proto_msgTypes[27]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3795,7 +3865,7 @@ func (x *BatteryStats_ControllerActivity_TxLevel) String() string {
 func (*BatteryStats_ControllerActivity_TxLevel) ProtoMessage() {}
 
 func (x *BatteryStats_ControllerActivity_TxLevel) ProtoReflect() protoreflect.Message {
-	mi := &file_pb_batterystats_proto_batterystats_proto_msgTypes[26]
+	mi := &file_pb_batterystats_proto_batterystats_proto_msgTypes[27]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3854,7 +3924,7 @@ type BatteryStats_System_Battery struct {
 
 func (x *BatteryStats_System_Battery) Reset() {
 	*x = BatteryStats_System_Battery{}
-	mi := &file_pb_batterystats_proto_batterystats_proto_msgTypes[27]
+	mi := &file_pb_batterystats_proto_batterystats_proto_msgTypes[28]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3866,7 +3936,7 @@ func (x *BatteryStats_System_Battery) String() string {
 func (*BatteryStats_System_Battery) ProtoMessage() {}
 
 func (x *BatteryStats_System_Battery) ProtoReflect() protoreflect.Message {
-	mi := &file_pb_batterystats_proto_batterystats_proto_msgTypes[27]
+	mi := &file_pb_batterystats_proto_batterystats_proto_msgTypes[28]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3982,7 +4052,7 @@ type BatteryStats_System_BatteryDischarge struct {
 
 func (x *BatteryStats_System_BatteryDischarge) Reset() {
 	*x = BatteryStats_System_BatteryDischarge{}
-	mi := &file_pb_batterystats_proto_batterystats_proto_msgTypes[28]
+	mi := &file_pb_batterystats_proto_batterystats_proto_msgTypes[29]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3994,7 +4064,7 @@ func (x *BatteryStats_System_BatteryDischarge) String() string {
 func (*BatteryStats_System_BatteryDischarge) ProtoMessage() {}
 
 func (x *BatteryStats_System_BatteryDischarge) ProtoReflect() protoreflect.Message {
-	mi := &file_pb_batterystats_proto_batterystats_proto_msgTypes[28]
+	mi := &file_pb_batterystats_proto_batterystats_proto_msgTypes[29]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4064,7 +4134,7 @@ type BatteryStats_System_BatteryLevel struct {
 
 func (x *BatteryStats_System_BatteryLevel) Reset() {
 	*x = BatteryStats_System_BatteryLevel{}
-	mi := &file_pb_batterystats_proto_batterystats_proto_msgTypes[29]
+	mi := &file_pb_batterystats_proto_batterystats_proto_msgTypes[30]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4076,7 +4146,7 @@ func (x *BatteryStats_System_BatteryLevel) String() string {
 func (*BatteryStats_System_BatteryLevel) ProtoMessage() {}
 
 func (x *BatteryStats_System_BatteryLevel) ProtoReflect() protoreflect.Message {
-	mi := &file_pb_batterystats_proto_batterystats_proto_msgTypes[29]
+	mi := &file_pb_batterystats_proto_batterystats_proto_msgTypes[30]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4119,7 +4189,7 @@ type BatteryStats_System_BluetoothState struct {
 
 func (x *BatteryStats_System_BluetoothState) Reset() {
 	*x = BatteryStats_System_BluetoothState{}
-	mi := &file_pb_batterystats_proto_batterystats_proto_msgTypes[30]
+	mi := &file_pb_batterystats_proto_batterystats_proto_msgTypes[31]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4131,7 +4201,7 @@ func (x *BatteryStats_System_BluetoothState) String() string {
 func (*BatteryStats_System_BluetoothState) ProtoMessage() {}
 
 func (x *BatteryStats_System_BluetoothState) ProtoReflect() protoreflect.Message {
-	mi := &file_pb_batterystats_proto_batterystats_proto_msgTypes[30]
+	mi := &file_pb_batterystats_proto_batterystats_proto_msgTypes[31]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4188,7 +4258,7 @@ type BatteryStats_System_ChargeStep struct {
 
 func (x *BatteryStats_System_ChargeStep) Reset() {
 	*x = BatteryStats_System_ChargeStep{}
-	mi := &file_pb_batterystats_proto_batterystats_proto_msgTypes[31]
+	mi := &file_pb_batterystats_proto_batterystats_proto_msgTypes[32]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4200,7 +4270,7 @@ func (x *BatteryStats_System_ChargeStep) String() string {
 func (*BatteryStats_System_ChargeStep) ProtoMessage() {}
 
 func (x *BatteryStats_System_ChargeStep) ProtoReflect() protoreflect.Message {
-	mi := &file_pb_batterystats_proto_batterystats_proto_msgTypes[31]
+	mi := &file_pb_batterystats_proto_batterystats_proto_msgTypes[32]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4263,7 +4333,7 @@ type BatteryStats_System_ChargeTimeRemaining struct {
 
 func (x *BatteryStats_System_ChargeTimeRemaining) Reset() {
 	*x = BatteryStats_System_ChargeTimeRemaining{}
-	mi := &file_pb_batterystats_proto_batterystats_proto_msgTypes[32]
+	mi := &file_pb_batterystats_proto_batterystats_proto_msgTypes[33]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4275,7 +4345,7 @@ func (x *BatteryStats_System_ChargeTimeRemaining) String() string {
 func (*BatteryStats_System_ChargeTimeRemaining) ProtoMessage() {}
 
 func (x *BatteryStats_System_ChargeTimeRemaining) ProtoReflect() protoreflect.Message {
-	mi := &file_pb_batterystats_proto_batterystats_proto_msgTypes[32]
+	mi := &file_pb_batterystats_proto_batterystats_proto_msgTypes[33]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4311,7 +4381,7 @@ type BatteryStats_System_DataConnection struct {
 
 func (x *BatteryStats_System_DataConnection) Reset() {
 	*x = BatteryStats_System_DataConnection{}
-	mi := &file_pb_batterystats_proto_batterystats_proto_msgTypes[33]
+	mi := &file_pb_batterystats_proto_batterystats_proto_msgTypes[34]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4323,7 +4393,7 @@ func (x *BatteryStats_System_DataConnection) String() string {
 func (*BatteryStats_System_DataConnection) ProtoMessage() {}
 
 func (x *BatteryStats_System_DataConnection) ProtoReflect() protoreflect.Message {
-	mi := &file_pb_batterystats_proto_batterystats_proto_msgTypes[33]
+	mi := &file_pb_batterystats_proto_batterystats_proto_msgTypes[34]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4380,7 +4450,7 @@ type BatteryStats_System_DischargeStep struct {
 
 func (x *BatteryStats_System_DischargeStep) Reset() {
 	*x = BatteryStats_System_DischargeStep{}
-	mi := &file_pb_batterystats_proto_batterystats_proto_msgTypes[34]
+	mi := &file_pb_batterystats_proto_batterystats_proto_msgTypes[35]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4392,7 +4462,7 @@ func (x *BatteryStats_System_DischargeStep) String() string {
 func (*BatteryStats_System_DischargeStep) ProtoMessage() {}
 
 func (x *BatteryStats_System_DischargeStep) ProtoReflect() protoreflect.Message {
-	mi := &file_pb_batterystats_proto_batterystats_proto_msgTypes[34]
+	mi := &file_pb_batterystats_proto_batterystats_proto_msgTypes[35]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4455,7 +4525,7 @@ type BatteryStats_System_DischargeTimeRemaining struct {
 
 func (x *BatteryStats_System_DischargeTimeRemaining) Reset() {
 	*x = BatteryStats_System_DischargeTimeRemaining{}
-	mi := &file_pb_batterystats_proto_batterystats_proto_msgTypes[35]
+	mi := &file_pb_batterystats_proto_batterystats_proto_msgTypes[36]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4467,7 +4537,7 @@ func (x *BatteryStats_System_DischargeTimeRemaining) String() string {
 func (*BatteryStats_System_DischargeTimeRemaining) ProtoMessage() {}
 
 func (x *BatteryStats_System_DischargeTimeRemaining) ProtoReflect() protoreflect.Message {
-	mi := &file_pb_batterystats_proto_batterystats_proto_msgTypes[35]
+	mi := &file_pb_batterystats_proto_batterystats_proto_msgTypes[36]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4498,7 +4568,7 @@ type BatteryStats_System_DisplayState struct {
 
 func (x *BatteryStats_System_DisplayState) Reset() {
 	*x = BatteryStats_System_DisplayState{}
-	mi := &file_pb_batterystats_proto_batterystats_proto_msgTypes[36]
+	mi := &file_pb_batterystats_proto_batterystats_proto_msgTypes[37]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4510,7 +4580,7 @@ func (x *BatteryStats_System_DisplayState) String() string {
 func (*BatteryStats_System_DisplayState) ProtoMessage() {}
 
 func (x *BatteryStats_System_DisplayState) ProtoReflect() protoreflect.Message {
-	mi := &file_pb_batterystats_proto_batterystats_proto_msgTypes[36]
+	mi := &file_pb_batterystats_proto_batterystats_proto_msgTypes[37]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4539,7 +4609,7 @@ type BatteryStats_System_GlobalBluetooth struct {
 
 func (x *BatteryStats_System_GlobalBluetooth) Reset() {
 	*x = BatteryStats_System_GlobalBluetooth{}
-	mi := &file_pb_batterystats_proto_batterystats_proto_msgTypes[37]
+	mi := &file_pb_batterystats_proto_batterystats_proto_msgTypes[38]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4551,7 +4621,7 @@ func (x *BatteryStats_System_GlobalBluetooth) String() string {
 func (*BatteryStats_System_GlobalBluetooth) ProtoMessage() {}
 
 func (x *BatteryStats_System_GlobalBluetooth) ProtoReflect() protoreflect.Message {
-	mi := &file_pb_batterystats_proto_batterystats_proto_msgTypes[37]
+	mi := &file_pb_batterystats_proto_batterystats_proto_msgTypes[38]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4614,7 +4684,7 @@ type BatteryStats_System_GlobalNetwork struct {
 
 func (x *BatteryStats_System_GlobalNetwork) Reset() {
 	*x = BatteryStats_System_GlobalNetwork{}
-	mi := &file_pb_batterystats_proto_batterystats_proto_msgTypes[38]
+	mi := &file_pb_batterystats_proto_batterystats_proto_msgTypes[39]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4626,7 +4696,7 @@ func (x *BatteryStats_System_GlobalNetwork) String() string {
 func (*BatteryStats_System_GlobalNetwork) ProtoMessage() {}
 
 func (x *BatteryStats_System_GlobalNetwork) ProtoReflect() protoreflect.Message {
-	mi := &file_pb_batterystats_proto_batterystats_proto_msgTypes[38]
+	mi := &file_pb_batterystats_proto_batterystats_proto_msgTypes[39]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4737,7 +4807,7 @@ type BatteryStats_System_GlobalWifi struct {
 
 func (x *BatteryStats_System_GlobalWifi) Reset() {
 	*x = BatteryStats_System_GlobalWifi{}
-	mi := &file_pb_batterystats_proto_batterystats_proto_msgTypes[39]
+	mi := &file_pb_batterystats_proto_batterystats_proto_msgTypes[40]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4749,7 +4819,7 @@ func (x *BatteryStats_System_GlobalWifi) String() string {
 func (*BatteryStats_System_GlobalWifi) ProtoMessage() {}
 
 func (x *BatteryStats_System_GlobalWifi) ProtoReflect() protoreflect.Message {
-	mi := &file_pb_batterystats_proto_batterystats_proto_msgTypes[39]
+	mi := &file_pb_batterystats_proto_batterystats_proto_msgTypes[40]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4819,7 +4889,7 @@ type BatteryStats_System_IdleMode struct {
 
 func (x *BatteryStats_System_IdleMode) Reset() {
 	*x = BatteryStats_System_IdleMode{}
-	mi := &file_pb_batterystats_proto_batterystats_proto_msgTypes[40]
+	mi := &file_pb_batterystats_proto_batterystats_proto_msgTypes[41]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4831,7 +4901,7 @@ func (x *BatteryStats_System_IdleMode) String() string {
 func (*BatteryStats_System_IdleMode) ProtoMessage() {}
 
 func (x *BatteryStats_System_IdleMode) ProtoReflect() protoreflect.Message {
-	mi := &file_pb_batterystats_proto_batterystats_proto_msgTypes[40]
+	mi := &file_pb_batterystats_proto_batterystats_proto_msgTypes[41]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4865,7 +4935,7 @@ type BatteryStats_System_KernelWakelock struct {
 
 func (x *BatteryStats_System_KernelWakelock) Reset() {
 	*x = BatteryStats_System_KernelWakelock{}
-	mi := &file_pb_batterystats_proto_batterystats_proto_msgTypes[41]
+	mi := &file_pb_batterystats_proto_batterystats_proto_msgTypes[42]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4877,7 +4947,7 @@ func (x *BatteryStats_System_KernelWakelock) String() string {
 func (*BatteryStats_System_KernelWakelock) ProtoMessage() {}
 
 func (x *BatteryStats_System_KernelWakelock) ProtoReflect() protoreflect.Message {
-	mi := &file_pb_batterystats_proto_batterystats_proto_msgTypes[41]
+	mi := &file_pb_batterystats_proto_batterystats_proto_msgTypes[42]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4991,7 +5061,7 @@ type BatteryStats_System_Misc struct {
 
 func (x *BatteryStats_System_Misc) Reset() {
 	*x = BatteryStats_System_Misc{}
-	mi := &file_pb_batterystats_proto_batterystats_proto_msgTypes[42]
+	mi := &file_pb_batterystats_proto_batterystats_proto_msgTypes[43]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5003,7 +5073,7 @@ func (x *BatteryStats_System_Misc) String() string {
 func (*BatteryStats_System_Misc) ProtoMessage() {}
 
 func (x *BatteryStats_System_Misc) ProtoReflect() protoreflect.Message {
-	mi := &file_pb_batterystats_proto_batterystats_proto_msgTypes[42]
+	mi := &file_pb_batterystats_proto_batterystats_proto_msgTypes[43]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5237,7 +5307,7 @@ type BatteryStats_System_PowerSaveMode struct {
 
 func (x *BatteryStats_System_PowerSaveMode) Reset() {
 	*x = BatteryStats_System_PowerSaveMode{}
-	mi := &file_pb_batterystats_proto_batterystats_proto_msgTypes[43]
+	mi := &file_pb_batterystats_proto_batterystats_proto_msgTypes[44]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5249,7 +5319,7 @@ func (x *BatteryStats_System_PowerSaveMode) String() string {
 func (*BatteryStats_System_PowerSaveMode) ProtoMessage() {}
 
 func (x *BatteryStats_System_PowerSaveMode) ProtoReflect() protoreflect.Message {
-	mi := &file_pb_batterystats_proto_batterystats_proto_msgTypes[43]
+	mi := &file_pb_batterystats_proto_batterystats_proto_msgTypes[44]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5275,7 +5345,7 @@ type BatteryStats_System_PowerUseItem struct {
 
 func (x *BatteryStats_System_PowerUseItem) Reset() {
 	*x = BatteryStats_System_PowerUseItem{}
-	mi := &file_pb_batterystats_proto_batterystats_proto_msgTypes[44]
+	mi := &file_pb_batterystats_proto_batterystats_proto_msgTypes[45]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5287,7 +5357,7 @@ func (x *BatteryStats_System_PowerUseItem) String() string {
 func (*BatteryStats_System_PowerUseItem) ProtoMessage() {}
 
 func (x *BatteryStats_System_PowerUseItem) ProtoReflect() protoreflect.Message {
-	mi := &file_pb_batterystats_proto_batterystats_proto_msgTypes[44]
+	mi := &file_pb_batterystats_proto_batterystats_proto_msgTypes[45]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5331,7 +5401,7 @@ type BatteryStats_System_PowerUseSummary struct {
 
 func (x *BatteryStats_System_PowerUseSummary) Reset() {
 	*x = BatteryStats_System_PowerUseSummary{}
-	mi := &file_pb_batterystats_proto_batterystats_proto_msgTypes[45]
+	mi := &file_pb_batterystats_proto_batterystats_proto_msgTypes[46]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5343,7 +5413,7 @@ func (x *BatteryStats_System_PowerUseSummary) String() string {
 func (*BatteryStats_System_PowerUseSummary) ProtoMessage() {}
 
 func (x *BatteryStats_System_PowerUseSummary) ProtoReflect() protoreflect.Message {
-	mi := &file_pb_batterystats_proto_batterystats_proto_msgTypes[45]
+	mi := &file_pb_batterystats_proto_batterystats_proto_msgTypes[46]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5398,7 +5468,7 @@ type BatteryStats_System_ScreenBrightness struct {
 
 func (x *BatteryStats_System_ScreenBrightness) Reset() {
 	*x = BatteryStats_System_ScreenBrightness{}
-	mi := &file_pb_batterystats_proto_batterystats_proto_msgTypes[46]
+	mi := &file_pb_batterystats_proto_batterystats_proto_msgTypes[47]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5410,7 +5480,7 @@ func (x *BatteryStats_System_ScreenBrightness) String() string {
 func (*BatteryStats_System_ScreenBrightness) ProtoMessage() {}
 
 func (x *BatteryStats_System_ScreenBrightness) ProtoReflect() protoreflect.Message {
-	mi := &file_pb_batterystats_proto_batterystats_proto_msgTypes[46]
+	mi := &file_pb_batterystats_proto_batterystats_proto_msgTypes[47]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5450,7 +5520,7 @@ type BatteryStats_System_SignalScanningTime struct {
 
 func (x *BatteryStats_System_SignalScanningTime) Reset() {
 	*x = BatteryStats_System_SignalScanningTime{}
-	mi := &file_pb_batterystats_proto_batterystats_proto_msgTypes[47]
+	mi := &file_pb_batterystats_proto_batterystats_proto_msgTypes[48]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5462,7 +5532,7 @@ func (x *BatteryStats_System_SignalScanningTime) String() string {
 func (*BatteryStats_System_SignalScanningTime) ProtoMessage() {}
 
 func (x *BatteryStats_System_SignalScanningTime) ProtoReflect() protoreflect.Message {
-	mi := &file_pb_batterystats_proto_batterystats_proto_msgTypes[47]
+	mi := &file_pb_batterystats_proto_batterystats_proto_msgTypes[48]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5498,7 +5568,7 @@ type BatteryStats_System_SignalStrength struct {
 
 func (x *BatteryStats_System_SignalStrength) Reset() {
 	*x = BatteryStats_System_SignalStrength{}
-	mi := &file_pb_batterystats_proto_batterystats_proto_msgTypes[48]
+	mi := &file_pb_batterystats_proto_batterystats_proto_msgTypes[49]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5510,7 +5580,7 @@ func (x *BatteryStats_System_SignalStrength) String() string {
 func (*BatteryStats_System_SignalStrength) ProtoMessage() {}
 
 func (x *BatteryStats_System_SignalStrength) ProtoReflect() protoreflect.Message {
-	mi := &file_pb_batterystats_proto_batterystats_proto_msgTypes[48]
+	mi := &file_pb_batterystats_proto_batterystats_proto_msgTypes[49]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5559,7 +5629,7 @@ type BatteryStats_System_WakeupReason struct {
 
 func (x *BatteryStats_System_WakeupReason) Reset() {
 	*x = BatteryStats_System_WakeupReason{}
-	mi := &file_pb_batterystats_proto_batterystats_proto_msgTypes[49]
+	mi := &file_pb_batterystats_proto_batterystats_proto_msgTypes[50]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5571,7 +5641,7 @@ func (x *BatteryStats_System_WakeupReason) String() string {
 func (*BatteryStats_System_WakeupReason) ProtoMessage() {}
 
 func (x *BatteryStats_System_WakeupReason) ProtoReflect() protoreflect.Message {
-	mi := &file_pb_batterystats_proto_batterystats_proto_msgTypes[49]
+	mi := &file_pb_batterystats_proto_batterystats_proto_msgTypes[50]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5620,7 +5690,7 @@ type BatteryStats_System_WifiSignalStrength struct {
 
 func (x *BatteryStats_System_WifiSignalStrength) Reset() {
 	*x = BatteryStats_System_WifiSignalStrength{}
-	mi := &file_pb_batterystats_proto_batterystats_proto_msgTypes[50]
+	mi := &file_pb_batterystats_proto_batterystats_proto_msgTypes[51]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5632,7 +5702,7 @@ func (x *BatteryStats_System_WifiSignalStrength) String() string {
 func (*BatteryStats_System_WifiSignalStrength) ProtoMessage() {}
 
 func (x *BatteryStats_System_WifiSignalStrength) ProtoReflect() protoreflect.Message {
-	mi := &file_pb_batterystats_proto_batterystats_proto_msgTypes[50]
+	mi := &file_pb_batterystats_proto_batterystats_proto_msgTypes[51]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5680,7 +5750,7 @@ type BatteryStats_System_WifiSupplicantState struct {
 
 func (x *BatteryStats_System_WifiSupplicantState) Reset() {
 	*x = BatteryStats_System_WifiSupplicantState{}
-	mi := &file_pb_batterystats_proto_batterystats_proto_msgTypes[51]
+	mi := &file_pb_batterystats_proto_batterystats_proto_msgTypes[52]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5692,7 +5762,7 @@ func (x *BatteryStats_System_WifiSupplicantState) String() string {
 func (*BatteryStats_System_WifiSupplicantState) ProtoMessage() {}
 
 func (x *BatteryStats_System_WifiSupplicantState) ProtoReflect() protoreflect.Message {
-	mi := &file_pb_batterystats_proto_batterystats_proto_msgTypes[51]
+	mi := &file_pb_batterystats_proto_batterystats_proto_msgTypes[52]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5741,7 +5811,7 @@ type BatteryStats_System_WifiState struct {
 
 func (x *BatteryStats_System_WifiState) Reset() {
 	*x = BatteryStats_System_WifiState{}
-	mi := &file_pb_batterystats_proto_batterystats_proto_msgTypes[52]
+	mi := &file_pb_batterystats_proto_batterystats_proto_msgTypes[53]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5753,7 +5823,7 @@ func (x *BatteryStats_System_WifiState) String() string {
 func (*BatteryStats_System_WifiState) ProtoMessage() {}
 
 func (x *BatteryStats_System_WifiState) ProtoReflect() protoreflect.Message {
-	mi := &file_pb_batterystats_proto_batterystats_proto_msgTypes[52]
+	mi := &file_pb_batterystats_proto_batterystats_proto_msgTypes[53]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5790,11 +5860,92 @@ func (x *BatteryStats_System_WifiState) GetCount() float32 {
 	return 0
 }
 
+// Resource Power Manager (RPM) stats: sleep blockers reported by the RPM
+// hardware. (rpm, BatteryStats checkin v22+.)
+type BatteryStats_System_ResourcePowerManager struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Name of the RPM state or voter.
+	Name *string `protobuf:"bytes,1,opt,name=name" json:"name,omitempty"`
+	// Total time and count, screen on and off combined.
+	TotalTimeMsec *float32 `protobuf:"fixed32,2,opt,name=total_time_msec,json=totalTimeMsec" json:"total_time_msec,omitempty"`
+	TotalCount    *float32 `protobuf:"fixed32,3,opt,name=total_count,json=totalCount" json:"total_count,omitempty"`
+	// Time and count accumulated while the screen was off.
+	ScreenOffTimeMsec *float32 `protobuf:"fixed32,4,opt,name=screen_off_time_msec,json=screenOffTimeMsec" json:"screen_off_time_msec,omitempty"`
+	ScreenOffCount    *float32 `protobuf:"fixed32,5,opt,name=screen_off_count,json=screenOffCount" json:"screen_off_count,omitempty"`
+	unknownFields     protoimpl.UnknownFields
+	sizeCache         protoimpl.SizeCache
+}
+
+func (x *BatteryStats_System_ResourcePowerManager) Reset() {
+	*x = BatteryStats_System_ResourcePowerManager{}
+	mi := &file_pb_batterystats_proto_batterystats_proto_msgTypes[54]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *BatteryStats_System_ResourcePowerManager) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*BatteryStats_System_ResourcePowerManager) ProtoMessage() {}
+
+func (x *BatteryStats_System_ResourcePowerManager) ProtoReflect() protoreflect.Message {
+	mi := &file_pb_batterystats_proto_batterystats_proto_msgTypes[54]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use BatteryStats_System_ResourcePowerManager.ProtoReflect.Descriptor instead.
+func (*BatteryStats_System_ResourcePowerManager) Descriptor() ([]byte, []int) {
+	return file_pb_batterystats_proto_batterystats_proto_rawDescGZIP(), []int{0, 2, 26}
+}
+
+func (x *BatteryStats_System_ResourcePowerManager) GetName() string {
+	if x != nil && x.Name != nil {
+		return *x.Name
+	}
+	return ""
+}
+
+func (x *BatteryStats_System_ResourcePowerManager) GetTotalTimeMsec() float32 {
+	if x != nil && x.TotalTimeMsec != nil {
+		return *x.TotalTimeMsec
+	}
+	return 0
+}
+
+func (x *BatteryStats_System_ResourcePowerManager) GetTotalCount() float32 {
+	if x != nil && x.TotalCount != nil {
+		return *x.TotalCount
+	}
+	return 0
+}
+
+func (x *BatteryStats_System_ResourcePowerManager) GetScreenOffTimeMsec() float32 {
+	if x != nil && x.ScreenOffTimeMsec != nil {
+		return *x.ScreenOffTimeMsec
+	}
+	return 0
+}
+
+func (x *BatteryStats_System_ResourcePowerManager) GetScreenOffCount() float32 {
+	if x != nil && x.ScreenOffCount != nil {
+		return *x.ScreenOffCount
+	}
+	return 0
+}
+
 var File_pb_batterystats_proto_batterystats_proto protoreflect.FileDescriptor
 
 const file_pb_batterystats_proto_batterystats_proto_rawDesc = "" +
 	"\n" +
-	"(pb/batterystats_proto/batterystats.proto\x12\fbatterystats\x1a\x1apb/build_proto/build.proto\"\xf3\x8b\x01\n" +
+	"(pb/batterystats_proto/batterystats.proto\x12\fbatterystats\x1a\x1apb/build_proto/build.proto\"\xe6\x8f\x01\n" +
 	"\fBatteryStats\x12\x1b\n" +
 	"\trecord_id\x18\x01 \x01(\tR\brecordId\x12\x1f\n" +
 	"\vandroid_idx\x18\x02 \x01(\tR\n" +
@@ -5834,7 +5985,7 @@ const file_pb_batterystats_proto_batterystats_proto_rawDesc = "" +
 	"\x05error\x18\x1f \x03(\tR\x05error\x12U\n" +
 	"\x10aggregation_type\x18\x19 \x01(\x0e2*.batterystats.BatteryStats.AggregationTypeR\x0faggregationType\x120\n" +
 	"\x03app\x18\x1a \x03(\v2\x1e.batterystats.BatteryStats.AppR\x03app\x129\n" +
-	"\x06system\x18\x1b \x01(\v2!.batterystats.BatteryStats.SystemR\x06system\x1a\xb15\n" +
+	"\x06system\x18\x1b \x01(\v2!.batterystats.BatteryStats.SystemR\x06system\x1a\xe56\n" +
 	"\x03App\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12!\n" +
 	"\fversion_code\x18\x02 \x01(\x05R\vversionCode\x12\x10\n" +
@@ -5854,7 +6005,8 @@ const file_pb_batterystats_proto_batterystats_proto_rawDesc = "" +
 	"flashlight\x12I\n" +
 	"\n" +
 	"foreground\x18\x05 \x01(\v2).batterystats.BatteryStats.App.ForegroundR\n" +
-	"foreground\x12X\n" +
+	"foreground\x12_\n" +
+	"\x12foreground_service\x18\x1f \x01(\v20.batterystats.BatteryStats.App.ForegroundServiceR\x11foregroundService\x12X\n" +
 	"\x10modem_controller\x18\x1a \x01(\v2-.batterystats.BatteryStats.ControllerActivityR\x0fmodemController\x12@\n" +
 	"\anetwork\x18\x06 \x01(\v2&.batterystats.BatteryStats.App.NetworkR\anetwork\x12Q\n" +
 	"\x0epower_use_item\x18\a \x01(\v2+.batterystats.BatteryStats.App.PowerUseItemR\fpowerUseItem\x12@\n" +
@@ -5909,6 +6061,9 @@ const file_pb_batterystats_proto_batterystats_proto_rawDesc = "" +
 	"\x05count\x18\x02 \x01(\x02R\x05count\x1aJ\n" +
 	"\n" +
 	"Foreground\x12&\n" +
+	"\x0ftotal_time_msec\x18\x01 \x01(\x02R\rtotalTimeMsec\x12\x14\n" +
+	"\x05count\x18\x02 \x01(\x02R\x05count\x1aQ\n" +
+	"\x11ForegroundService\x12&\n" +
 	"\x0ftotal_time_msec\x18\x01 \x01(\x02R\rtotalTimeMsec\x12\x14\n" +
 	"\x05count\x18\x02 \x01(\x02R\x05count\x1a\xb4\a\n" +
 	"\aNetwork\x12&\n" +
@@ -6032,7 +6187,7 @@ const file_pb_batterystats_proto_batterystats_proto_rawDesc = "" +
 	"\x02tx\x18\x04 \x03(\v25.batterystats.BatteryStats.ControllerActivity.TxLevelR\x02tx\x1a<\n" +
 	"\aTxLevel\x12\x14\n" +
 	"\x05level\x18\x01 \x01(\x05R\x05level\x12\x1b\n" +
-	"\ttime_msec\x18\x02 \x01(\x03R\btimeMsec\x1a\x8aK\n" +
+	"\ttime_msec\x18\x02 \x01(\x03R\btimeMsec\x1a\xc9M\n" +
 	"\x06System\x12C\n" +
 	"\abattery\x18\x01 \x01(\v2).batterystats.BatteryStats.System.BatteryR\abattery\x12_\n" +
 	"\x11battery_discharge\x18\x02 \x01(\v22.batterystats.BatteryStats.System.BatteryDischargeR\x10batteryDischarge\x12S\n" +
@@ -6063,7 +6218,8 @@ const file_pb_batterystats_proto_batterystats_proto_rawDesc = "" +
 	"\x14wifi_signal_strength\x18\x10 \x03(\v24.batterystats.BatteryStats.System.WifiSignalStrengthR\x12wifiSignalStrength\x12i\n" +
 	"\x15wifi_supplicant_state\x18\x11 \x03(\v25.batterystats.BatteryStats.System.WifiSupplicantStateR\x13wifiSupplicantState\x12J\n" +
 	"\n" +
-	"wifi_state\x18\x0f \x03(\v2+.batterystats.BatteryStats.System.WifiStateR\twifiState\x1a\xe0\x04\n" +
+	"wifi_state\x18\x0f \x03(\v2+.batterystats.BatteryStats.System.WifiStateR\twifiState\x12l\n" +
+	"\x16resource_power_manager\x18\x1b \x03(\v26.batterystats.BatteryStats.System.ResourcePowerManagerR\x14resourcePowerManager\x1a\xe0\x04\n" +
 	"\aBattery\x12\x1f\n" +
 	"\vstart_count\x18\x01 \x01(\x02R\n" +
 	"startCount\x122\n" +
@@ -6318,7 +6474,14 @@ const file_pb_batterystats_proto_batterystats_proto_rawDesc = "" +
 	"\x10ON_CONNECTED_STA\x10\x04\x12\x14\n" +
 	"\x10ON_CONNECTED_P2P\x10\x05\x12\x18\n" +
 	"\x14ON_CONNECTED_STA_P2P\x10\x06\x12\v\n" +
-	"\aSOFT_AP\x10\a\"\\\n" +
+	"\aSOFT_AP\x10\a\x1a\xce\x01\n" +
+	"\x14ResourcePowerManager\x12\x12\n" +
+	"\x04name\x18\x01 \x01(\tR\x04name\x12&\n" +
+	"\x0ftotal_time_msec\x18\x02 \x01(\x02R\rtotalTimeMsec\x12\x1f\n" +
+	"\vtotal_count\x18\x03 \x01(\x02R\n" +
+	"totalCount\x12/\n" +
+	"\x14screen_off_time_msec\x18\x04 \x01(\x02R\x11screenOffTimeMsec\x12(\n" +
+	"\x10screen_off_count\x18\x05 \x01(\x02R\x0escreenOffCount\"\\\n" +
 	"\x0fAggregationType\x12\x11\n" +
 	"\rSINCE_CHARGED\x10\x00\x12\f\n" +
 	"\x04LAST\x10\x01\x1a\x02\b\x01\x12\x0f\n" +
@@ -6338,7 +6501,7 @@ func file_pb_batterystats_proto_batterystats_proto_rawDescGZIP() []byte {
 }
 
 var file_pb_batterystats_proto_batterystats_proto_enumTypes = make([]protoimpl.EnumInfo, 13)
-var file_pb_batterystats_proto_batterystats_proto_msgTypes = make([]protoimpl.MessageInfo, 53)
+var file_pb_batterystats_proto_batterystats_proto_msgTypes = make([]protoimpl.MessageInfo, 55)
 var file_pb_batterystats_proto_batterystats_proto_goTypes = []any{
 	(BatteryStats_AggregationType)(0),                  // 0: batterystats.BatteryStats.AggregationType
 	(BatteryStats_App_UserActivity_Name)(0),            // 1: batterystats.BatteryStats.App.UserActivity.Name
@@ -6365,51 +6528,53 @@ var file_pb_batterystats_proto_batterystats_proto_goTypes = []any{
 	(*BatteryStats_App_Cpu)(nil),                       // 22: batterystats.BatteryStats.App.Cpu
 	(*BatteryStats_App_Flashlight)(nil),                // 23: batterystats.BatteryStats.App.Flashlight
 	(*BatteryStats_App_Foreground)(nil),                // 24: batterystats.BatteryStats.App.Foreground
-	(*BatteryStats_App_Network)(nil),                   // 25: batterystats.BatteryStats.App.Network
-	(*BatteryStats_App_PowerUseItem)(nil),              // 26: batterystats.BatteryStats.App.PowerUseItem
-	(*BatteryStats_App_Process)(nil),                   // 27: batterystats.BatteryStats.App.Process
-	(*BatteryStats_App_ScheduledJob)(nil),              // 28: batterystats.BatteryStats.App.ScheduledJob
-	(*BatteryStats_App_Sensor)(nil),                    // 29: batterystats.BatteryStats.App.Sensor
-	(*BatteryStats_App_StateTime)(nil),                 // 30: batterystats.BatteryStats.App.StateTime
-	(*BatteryStats_App_Sync)(nil),                      // 31: batterystats.BatteryStats.App.Sync
-	(*BatteryStats_App_UserActivity)(nil),              // 32: batterystats.BatteryStats.App.UserActivity
-	(*BatteryStats_App_Vibrator)(nil),                  // 33: batterystats.BatteryStats.App.Vibrator
-	(*BatteryStats_App_Video)(nil),                     // 34: batterystats.BatteryStats.App.Video
-	(*BatteryStats_App_Wakelock)(nil),                  // 35: batterystats.BatteryStats.App.Wakelock
-	(*BatteryStats_App_WakeupAlarm)(nil),               // 36: batterystats.BatteryStats.App.WakeupAlarm
-	(*BatteryStats_App_Wifi)(nil),                      // 37: batterystats.BatteryStats.App.Wifi
-	(*BatteryStats_App_Apk_Service)(nil),               // 38: batterystats.BatteryStats.App.Apk.Service
-	(*BatteryStats_ControllerActivity_TxLevel)(nil),    // 39: batterystats.BatteryStats.ControllerActivity.TxLevel
-	(*BatteryStats_System_Battery)(nil),                // 40: batterystats.BatteryStats.System.Battery
-	(*BatteryStats_System_BatteryDischarge)(nil),       // 41: batterystats.BatteryStats.System.BatteryDischarge
-	(*BatteryStats_System_BatteryLevel)(nil),           // 42: batterystats.BatteryStats.System.BatteryLevel
-	(*BatteryStats_System_BluetoothState)(nil),         // 43: batterystats.BatteryStats.System.BluetoothState
-	(*BatteryStats_System_ChargeStep)(nil),             // 44: batterystats.BatteryStats.System.ChargeStep
-	(*BatteryStats_System_ChargeTimeRemaining)(nil),    // 45: batterystats.BatteryStats.System.ChargeTimeRemaining
-	(*BatteryStats_System_DataConnection)(nil),         // 46: batterystats.BatteryStats.System.DataConnection
-	(*BatteryStats_System_DischargeStep)(nil),          // 47: batterystats.BatteryStats.System.DischargeStep
-	(*BatteryStats_System_DischargeTimeRemaining)(nil), // 48: batterystats.BatteryStats.System.DischargeTimeRemaining
-	(*BatteryStats_System_DisplayState)(nil),           // 49: batterystats.BatteryStats.System.DisplayState
-	(*BatteryStats_System_GlobalBluetooth)(nil),        // 50: batterystats.BatteryStats.System.GlobalBluetooth
-	(*BatteryStats_System_GlobalNetwork)(nil),          // 51: batterystats.BatteryStats.System.GlobalNetwork
-	(*BatteryStats_System_GlobalWifi)(nil),             // 52: batterystats.BatteryStats.System.GlobalWifi
-	(*BatteryStats_System_IdleMode)(nil),               // 53: batterystats.BatteryStats.System.IdleMode
-	(*BatteryStats_System_KernelWakelock)(nil),         // 54: batterystats.BatteryStats.System.KernelWakelock
-	(*BatteryStats_System_Misc)(nil),                   // 55: batterystats.BatteryStats.System.Misc
-	(*BatteryStats_System_PowerSaveMode)(nil),          // 56: batterystats.BatteryStats.System.PowerSaveMode
-	(*BatteryStats_System_PowerUseItem)(nil),           // 57: batterystats.BatteryStats.System.PowerUseItem
-	(*BatteryStats_System_PowerUseSummary)(nil),        // 58: batterystats.BatteryStats.System.PowerUseSummary
-	(*BatteryStats_System_ScreenBrightness)(nil),       // 59: batterystats.BatteryStats.System.ScreenBrightness
-	(*BatteryStats_System_SignalScanningTime)(nil),     // 60: batterystats.BatteryStats.System.SignalScanningTime
-	(*BatteryStats_System_SignalStrength)(nil),         // 61: batterystats.BatteryStats.System.SignalStrength
-	(*BatteryStats_System_WakeupReason)(nil),           // 62: batterystats.BatteryStats.System.WakeupReason
-	(*BatteryStats_System_WifiSignalStrength)(nil),     // 63: batterystats.BatteryStats.System.WifiSignalStrength
-	(*BatteryStats_System_WifiSupplicantState)(nil),    // 64: batterystats.BatteryStats.System.WifiSupplicantState
-	(*BatteryStats_System_WifiState)(nil),              // 65: batterystats.BatteryStats.System.WifiState
-	(*build_proto.Build)(nil),                          // 66: build.Build
+	(*BatteryStats_App_ForegroundService)(nil),         // 25: batterystats.BatteryStats.App.ForegroundService
+	(*BatteryStats_App_Network)(nil),                   // 26: batterystats.BatteryStats.App.Network
+	(*BatteryStats_App_PowerUseItem)(nil),              // 27: batterystats.BatteryStats.App.PowerUseItem
+	(*BatteryStats_App_Process)(nil),                   // 28: batterystats.BatteryStats.App.Process
+	(*BatteryStats_App_ScheduledJob)(nil),              // 29: batterystats.BatteryStats.App.ScheduledJob
+	(*BatteryStats_App_Sensor)(nil),                    // 30: batterystats.BatteryStats.App.Sensor
+	(*BatteryStats_App_StateTime)(nil),                 // 31: batterystats.BatteryStats.App.StateTime
+	(*BatteryStats_App_Sync)(nil),                      // 32: batterystats.BatteryStats.App.Sync
+	(*BatteryStats_App_UserActivity)(nil),              // 33: batterystats.BatteryStats.App.UserActivity
+	(*BatteryStats_App_Vibrator)(nil),                  // 34: batterystats.BatteryStats.App.Vibrator
+	(*BatteryStats_App_Video)(nil),                     // 35: batterystats.BatteryStats.App.Video
+	(*BatteryStats_App_Wakelock)(nil),                  // 36: batterystats.BatteryStats.App.Wakelock
+	(*BatteryStats_App_WakeupAlarm)(nil),               // 37: batterystats.BatteryStats.App.WakeupAlarm
+	(*BatteryStats_App_Wifi)(nil),                      // 38: batterystats.BatteryStats.App.Wifi
+	(*BatteryStats_App_Apk_Service)(nil),               // 39: batterystats.BatteryStats.App.Apk.Service
+	(*BatteryStats_ControllerActivity_TxLevel)(nil),    // 40: batterystats.BatteryStats.ControllerActivity.TxLevel
+	(*BatteryStats_System_Battery)(nil),                // 41: batterystats.BatteryStats.System.Battery
+	(*BatteryStats_System_BatteryDischarge)(nil),       // 42: batterystats.BatteryStats.System.BatteryDischarge
+	(*BatteryStats_System_BatteryLevel)(nil),           // 43: batterystats.BatteryStats.System.BatteryLevel
+	(*BatteryStats_System_BluetoothState)(nil),         // 44: batterystats.BatteryStats.System.BluetoothState
+	(*BatteryStats_System_ChargeStep)(nil),             // 45: batterystats.BatteryStats.System.ChargeStep
+	(*BatteryStats_System_ChargeTimeRemaining)(nil),    // 46: batterystats.BatteryStats.System.ChargeTimeRemaining
+	(*BatteryStats_System_DataConnection)(nil),         // 47: batterystats.BatteryStats.System.DataConnection
+	(*BatteryStats_System_DischargeStep)(nil),          // 48: batterystats.BatteryStats.System.DischargeStep
+	(*BatteryStats_System_DischargeTimeRemaining)(nil), // 49: batterystats.BatteryStats.System.DischargeTimeRemaining
+	(*BatteryStats_System_DisplayState)(nil),           // 50: batterystats.BatteryStats.System.DisplayState
+	(*BatteryStats_System_GlobalBluetooth)(nil),        // 51: batterystats.BatteryStats.System.GlobalBluetooth
+	(*BatteryStats_System_GlobalNetwork)(nil),          // 52: batterystats.BatteryStats.System.GlobalNetwork
+	(*BatteryStats_System_GlobalWifi)(nil),             // 53: batterystats.BatteryStats.System.GlobalWifi
+	(*BatteryStats_System_IdleMode)(nil),               // 54: batterystats.BatteryStats.System.IdleMode
+	(*BatteryStats_System_KernelWakelock)(nil),         // 55: batterystats.BatteryStats.System.KernelWakelock
+	(*BatteryStats_System_Misc)(nil),                   // 56: batterystats.BatteryStats.System.Misc
+	(*BatteryStats_System_PowerSaveMode)(nil),          // 57: batterystats.BatteryStats.System.PowerSaveMode
+	(*BatteryStats_System_PowerUseItem)(nil),           // 58: batterystats.BatteryStats.System.PowerUseItem
+	(*BatteryStats_System_PowerUseSummary)(nil),        // 59: batterystats.BatteryStats.System.PowerUseSummary
+	(*BatteryStats_System_ScreenBrightness)(nil),       // 60: batterystats.BatteryStats.System.ScreenBrightness
+	(*BatteryStats_System_SignalScanningTime)(nil),     // 61: batterystats.BatteryStats.System.SignalScanningTime
+	(*BatteryStats_System_SignalStrength)(nil),         // 62: batterystats.BatteryStats.System.SignalStrength
+	(*BatteryStats_System_WakeupReason)(nil),           // 63: batterystats.BatteryStats.System.WakeupReason
+	(*BatteryStats_System_WifiSignalStrength)(nil),     // 64: batterystats.BatteryStats.System.WifiSignalStrength
+	(*BatteryStats_System_WifiSupplicantState)(nil),    // 65: batterystats.BatteryStats.System.WifiSupplicantState
+	(*BatteryStats_System_WifiState)(nil),              // 66: batterystats.BatteryStats.System.WifiState
+	(*BatteryStats_System_ResourcePowerManager)(nil),   // 67: batterystats.BatteryStats.System.ResourcePowerManager
+	(*build_proto.Build)(nil),                          // 68: build.Build
 }
 var file_pb_batterystats_proto_batterystats_proto_depIdxs = []int32{
-	66, // 0: batterystats.BatteryStats.build:type_name -> build.Build
+	68, // 0: batterystats.BatteryStats.build:type_name -> build.Build
 	0,  // 1: batterystats.BatteryStats.aggregation_type:type_name -> batterystats.BatteryStats.AggregationType
 	14, // 2: batterystats.BatteryStats.app:type_name -> batterystats.BatteryStats.App
 	16, // 3: batterystats.BatteryStats.system:type_name -> batterystats.BatteryStats.System
@@ -6423,70 +6588,72 @@ var file_pb_batterystats_proto_batterystats_proto_depIdxs = []int32{
 	22, // 11: batterystats.BatteryStats.App.cpu:type_name -> batterystats.BatteryStats.App.Cpu
 	23, // 12: batterystats.BatteryStats.App.flashlight:type_name -> batterystats.BatteryStats.App.Flashlight
 	24, // 13: batterystats.BatteryStats.App.foreground:type_name -> batterystats.BatteryStats.App.Foreground
-	15, // 14: batterystats.BatteryStats.App.modem_controller:type_name -> batterystats.BatteryStats.ControllerActivity
-	25, // 15: batterystats.BatteryStats.App.network:type_name -> batterystats.BatteryStats.App.Network
-	26, // 16: batterystats.BatteryStats.App.power_use_item:type_name -> batterystats.BatteryStats.App.PowerUseItem
-	27, // 17: batterystats.BatteryStats.App.process:type_name -> batterystats.BatteryStats.App.Process
-	28, // 18: batterystats.BatteryStats.App.scheduled_job:type_name -> batterystats.BatteryStats.App.ScheduledJob
-	29, // 19: batterystats.BatteryStats.App.sensor:type_name -> batterystats.BatteryStats.App.Sensor
-	30, // 20: batterystats.BatteryStats.App.state_time:type_name -> batterystats.BatteryStats.App.StateTime
-	31, // 21: batterystats.BatteryStats.App.sync:type_name -> batterystats.BatteryStats.App.Sync
-	32, // 22: batterystats.BatteryStats.App.user_activity:type_name -> batterystats.BatteryStats.App.UserActivity
-	33, // 23: batterystats.BatteryStats.App.vibrator:type_name -> batterystats.BatteryStats.App.Vibrator
-	34, // 24: batterystats.BatteryStats.App.video:type_name -> batterystats.BatteryStats.App.Video
-	35, // 25: batterystats.BatteryStats.App.wakelock:type_name -> batterystats.BatteryStats.App.Wakelock
-	36, // 26: batterystats.BatteryStats.App.wakeup_alarm:type_name -> batterystats.BatteryStats.App.WakeupAlarm
-	37, // 27: batterystats.BatteryStats.App.wifi:type_name -> batterystats.BatteryStats.App.Wifi
-	15, // 28: batterystats.BatteryStats.App.wifi_controller:type_name -> batterystats.BatteryStats.ControllerActivity
-	39, // 29: batterystats.BatteryStats.ControllerActivity.tx:type_name -> batterystats.BatteryStats.ControllerActivity.TxLevel
-	40, // 30: batterystats.BatteryStats.System.battery:type_name -> batterystats.BatteryStats.System.Battery
-	41, // 31: batterystats.BatteryStats.System.battery_discharge:type_name -> batterystats.BatteryStats.System.BatteryDischarge
-	42, // 32: batterystats.BatteryStats.System.battery_level:type_name -> batterystats.BatteryStats.System.BatteryLevel
-	43, // 33: batterystats.BatteryStats.System.bluetooth_state:type_name -> batterystats.BatteryStats.System.BluetoothState
-	44, // 34: batterystats.BatteryStats.System.charge_step:type_name -> batterystats.BatteryStats.System.ChargeStep
-	45, // 35: batterystats.BatteryStats.System.charge_time_remaining:type_name -> batterystats.BatteryStats.System.ChargeTimeRemaining
-	46, // 36: batterystats.BatteryStats.System.data_connection:type_name -> batterystats.BatteryStats.System.DataConnection
-	47, // 37: batterystats.BatteryStats.System.discharge_step:type_name -> batterystats.BatteryStats.System.DischargeStep
-	48, // 38: batterystats.BatteryStats.System.discharge_time_remaining:type_name -> batterystats.BatteryStats.System.DischargeTimeRemaining
-	50, // 39: batterystats.BatteryStats.System.global_bluetooth:type_name -> batterystats.BatteryStats.System.GlobalBluetooth
-	15, // 40: batterystats.BatteryStats.System.global_bluetooth_controller:type_name -> batterystats.BatteryStats.ControllerActivity
-	15, // 41: batterystats.BatteryStats.System.global_modem_controller:type_name -> batterystats.BatteryStats.ControllerActivity
-	51, // 42: batterystats.BatteryStats.System.global_network:type_name -> batterystats.BatteryStats.System.GlobalNetwork
-	52, // 43: batterystats.BatteryStats.System.global_wifi:type_name -> batterystats.BatteryStats.System.GlobalWifi
-	15, // 44: batterystats.BatteryStats.System.global_wifi_controller:type_name -> batterystats.BatteryStats.ControllerActivity
-	54, // 45: batterystats.BatteryStats.System.kernel_wakelock:type_name -> batterystats.BatteryStats.System.KernelWakelock
-	55, // 46: batterystats.BatteryStats.System.misc:type_name -> batterystats.BatteryStats.System.Misc
-	57, // 47: batterystats.BatteryStats.System.power_use_item:type_name -> batterystats.BatteryStats.System.PowerUseItem
-	58, // 48: batterystats.BatteryStats.System.power_use_summary:type_name -> batterystats.BatteryStats.System.PowerUseSummary
-	59, // 49: batterystats.BatteryStats.System.screen_brightness:type_name -> batterystats.BatteryStats.System.ScreenBrightness
-	60, // 50: batterystats.BatteryStats.System.signal_scanning_time:type_name -> batterystats.BatteryStats.System.SignalScanningTime
-	61, // 51: batterystats.BatteryStats.System.signal_strength:type_name -> batterystats.BatteryStats.System.SignalStrength
-	62, // 52: batterystats.BatteryStats.System.wakeup_reason:type_name -> batterystats.BatteryStats.System.WakeupReason
-	63, // 53: batterystats.BatteryStats.System.wifi_signal_strength:type_name -> batterystats.BatteryStats.System.WifiSignalStrength
-	64, // 54: batterystats.BatteryStats.System.wifi_supplicant_state:type_name -> batterystats.BatteryStats.System.WifiSupplicantState
-	65, // 55: batterystats.BatteryStats.System.wifi_state:type_name -> batterystats.BatteryStats.System.WifiState
-	18, // 56: batterystats.BatteryStats.App.Child.apk:type_name -> batterystats.BatteryStats.App.Apk
-	38, // 57: batterystats.BatteryStats.App.Apk.service:type_name -> batterystats.BatteryStats.App.Apk.Service
-	1,  // 58: batterystats.BatteryStats.App.UserActivity.name:type_name -> batterystats.BatteryStats.App.UserActivity.Name
-	2,  // 59: batterystats.BatteryStats.System.BluetoothState.name:type_name -> batterystats.BatteryStats.System.BluetoothState.Name
-	4,  // 60: batterystats.BatteryStats.System.ChargeStep.display_state:type_name -> batterystats.BatteryStats.System.DisplayState.State
-	6,  // 61: batterystats.BatteryStats.System.ChargeStep.power_save_mode:type_name -> batterystats.BatteryStats.System.PowerSaveMode.Mode
-	5,  // 62: batterystats.BatteryStats.System.ChargeStep.idle_mode:type_name -> batterystats.BatteryStats.System.IdleMode.Mode
-	3,  // 63: batterystats.BatteryStats.System.DataConnection.name:type_name -> batterystats.BatteryStats.System.DataConnection.Name
-	4,  // 64: batterystats.BatteryStats.System.DischargeStep.display_state:type_name -> batterystats.BatteryStats.System.DisplayState.State
-	6,  // 65: batterystats.BatteryStats.System.DischargeStep.power_save_mode:type_name -> batterystats.BatteryStats.System.PowerSaveMode.Mode
-	5,  // 66: batterystats.BatteryStats.System.DischargeStep.idle_mode:type_name -> batterystats.BatteryStats.System.IdleMode.Mode
-	7,  // 67: batterystats.BatteryStats.System.PowerUseItem.name:type_name -> batterystats.BatteryStats.System.PowerUseItem.Name
-	8,  // 68: batterystats.BatteryStats.System.ScreenBrightness.name:type_name -> batterystats.BatteryStats.System.ScreenBrightness.Name
-	9,  // 69: batterystats.BatteryStats.System.SignalStrength.name:type_name -> batterystats.BatteryStats.System.SignalStrength.Name
-	10, // 70: batterystats.BatteryStats.System.WifiSignalStrength.name:type_name -> batterystats.BatteryStats.System.WifiSignalStrength.Name
-	11, // 71: batterystats.BatteryStats.System.WifiSupplicantState.name:type_name -> batterystats.BatteryStats.System.WifiSupplicantState.Name
-	12, // 72: batterystats.BatteryStats.System.WifiState.name:type_name -> batterystats.BatteryStats.System.WifiState.Name
-	73, // [73:73] is the sub-list for method output_type
-	73, // [73:73] is the sub-list for method input_type
-	73, // [73:73] is the sub-list for extension type_name
-	73, // [73:73] is the sub-list for extension extendee
-	0,  // [0:73] is the sub-list for field type_name
+	25, // 14: batterystats.BatteryStats.App.foreground_service:type_name -> batterystats.BatteryStats.App.ForegroundService
+	15, // 15: batterystats.BatteryStats.App.modem_controller:type_name -> batterystats.BatteryStats.ControllerActivity
+	26, // 16: batterystats.BatteryStats.App.network:type_name -> batterystats.BatteryStats.App.Network
+	27, // 17: batterystats.BatteryStats.App.power_use_item:type_name -> batterystats.BatteryStats.App.PowerUseItem
+	28, // 18: batterystats.BatteryStats.App.process:type_name -> batterystats.BatteryStats.App.Process
+	29, // 19: batterystats.BatteryStats.App.scheduled_job:type_name -> batterystats.BatteryStats.App.ScheduledJob
+	30, // 20: batterystats.BatteryStats.App.sensor:type_name -> batterystats.BatteryStats.App.Sensor
+	31, // 21: batterystats.BatteryStats.App.state_time:type_name -> batterystats.BatteryStats.App.StateTime
+	32, // 22: batterystats.BatteryStats.App.sync:type_name -> batterystats.BatteryStats.App.Sync
+	33, // 23: batterystats.BatteryStats.App.user_activity:type_name -> batterystats.BatteryStats.App.UserActivity
+	34, // 24: batterystats.BatteryStats.App.vibrator:type_name -> batterystats.BatteryStats.App.Vibrator
+	35, // 25: batterystats.BatteryStats.App.video:type_name -> batterystats.BatteryStats.App.Video
+	36, // 26: batterystats.BatteryStats.App.wakelock:type_name -> batterystats.BatteryStats.App.Wakelock
+	37, // 27: batterystats.BatteryStats.App.wakeup_alarm:type_name -> batterystats.BatteryStats.App.WakeupAlarm
+	38, // 28: batterystats.BatteryStats.App.wifi:type_name -> batterystats.BatteryStats.App.Wifi
+	15, // 29: batterystats.BatteryStats.App.wifi_controller:type_name -> batterystats.BatteryStats.ControllerActivity
+	40, // 30: batterystats.BatteryStats.ControllerActivity.tx:type_name -> batterystats.BatteryStats.ControllerActivity.TxLevel
+	41, // 31: batterystats.BatteryStats.System.battery:type_name -> batterystats.BatteryStats.System.Battery
+	42, // 32: batterystats.BatteryStats.System.battery_discharge:type_name -> batterystats.BatteryStats.System.BatteryDischarge
+	43, // 33: batterystats.BatteryStats.System.battery_level:type_name -> batterystats.BatteryStats.System.BatteryLevel
+	44, // 34: batterystats.BatteryStats.System.bluetooth_state:type_name -> batterystats.BatteryStats.System.BluetoothState
+	45, // 35: batterystats.BatteryStats.System.charge_step:type_name -> batterystats.BatteryStats.System.ChargeStep
+	46, // 36: batterystats.BatteryStats.System.charge_time_remaining:type_name -> batterystats.BatteryStats.System.ChargeTimeRemaining
+	47, // 37: batterystats.BatteryStats.System.data_connection:type_name -> batterystats.BatteryStats.System.DataConnection
+	48, // 38: batterystats.BatteryStats.System.discharge_step:type_name -> batterystats.BatteryStats.System.DischargeStep
+	49, // 39: batterystats.BatteryStats.System.discharge_time_remaining:type_name -> batterystats.BatteryStats.System.DischargeTimeRemaining
+	51, // 40: batterystats.BatteryStats.System.global_bluetooth:type_name -> batterystats.BatteryStats.System.GlobalBluetooth
+	15, // 41: batterystats.BatteryStats.System.global_bluetooth_controller:type_name -> batterystats.BatteryStats.ControllerActivity
+	15, // 42: batterystats.BatteryStats.System.global_modem_controller:type_name -> batterystats.BatteryStats.ControllerActivity
+	52, // 43: batterystats.BatteryStats.System.global_network:type_name -> batterystats.BatteryStats.System.GlobalNetwork
+	53, // 44: batterystats.BatteryStats.System.global_wifi:type_name -> batterystats.BatteryStats.System.GlobalWifi
+	15, // 45: batterystats.BatteryStats.System.global_wifi_controller:type_name -> batterystats.BatteryStats.ControllerActivity
+	55, // 46: batterystats.BatteryStats.System.kernel_wakelock:type_name -> batterystats.BatteryStats.System.KernelWakelock
+	56, // 47: batterystats.BatteryStats.System.misc:type_name -> batterystats.BatteryStats.System.Misc
+	58, // 48: batterystats.BatteryStats.System.power_use_item:type_name -> batterystats.BatteryStats.System.PowerUseItem
+	59, // 49: batterystats.BatteryStats.System.power_use_summary:type_name -> batterystats.BatteryStats.System.PowerUseSummary
+	60, // 50: batterystats.BatteryStats.System.screen_brightness:type_name -> batterystats.BatteryStats.System.ScreenBrightness
+	61, // 51: batterystats.BatteryStats.System.signal_scanning_time:type_name -> batterystats.BatteryStats.System.SignalScanningTime
+	62, // 52: batterystats.BatteryStats.System.signal_strength:type_name -> batterystats.BatteryStats.System.SignalStrength
+	63, // 53: batterystats.BatteryStats.System.wakeup_reason:type_name -> batterystats.BatteryStats.System.WakeupReason
+	64, // 54: batterystats.BatteryStats.System.wifi_signal_strength:type_name -> batterystats.BatteryStats.System.WifiSignalStrength
+	65, // 55: batterystats.BatteryStats.System.wifi_supplicant_state:type_name -> batterystats.BatteryStats.System.WifiSupplicantState
+	66, // 56: batterystats.BatteryStats.System.wifi_state:type_name -> batterystats.BatteryStats.System.WifiState
+	67, // 57: batterystats.BatteryStats.System.resource_power_manager:type_name -> batterystats.BatteryStats.System.ResourcePowerManager
+	18, // 58: batterystats.BatteryStats.App.Child.apk:type_name -> batterystats.BatteryStats.App.Apk
+	39, // 59: batterystats.BatteryStats.App.Apk.service:type_name -> batterystats.BatteryStats.App.Apk.Service
+	1,  // 60: batterystats.BatteryStats.App.UserActivity.name:type_name -> batterystats.BatteryStats.App.UserActivity.Name
+	2,  // 61: batterystats.BatteryStats.System.BluetoothState.name:type_name -> batterystats.BatteryStats.System.BluetoothState.Name
+	4,  // 62: batterystats.BatteryStats.System.ChargeStep.display_state:type_name -> batterystats.BatteryStats.System.DisplayState.State
+	6,  // 63: batterystats.BatteryStats.System.ChargeStep.power_save_mode:type_name -> batterystats.BatteryStats.System.PowerSaveMode.Mode
+	5,  // 64: batterystats.BatteryStats.System.ChargeStep.idle_mode:type_name -> batterystats.BatteryStats.System.IdleMode.Mode
+	3,  // 65: batterystats.BatteryStats.System.DataConnection.name:type_name -> batterystats.BatteryStats.System.DataConnection.Name
+	4,  // 66: batterystats.BatteryStats.System.DischargeStep.display_state:type_name -> batterystats.BatteryStats.System.DisplayState.State
+	6,  // 67: batterystats.BatteryStats.System.DischargeStep.power_save_mode:type_name -> batterystats.BatteryStats.System.PowerSaveMode.Mode
+	5,  // 68: batterystats.BatteryStats.System.DischargeStep.idle_mode:type_name -> batterystats.BatteryStats.System.IdleMode.Mode
+	7,  // 69: batterystats.BatteryStats.System.PowerUseItem.name:type_name -> batterystats.BatteryStats.System.PowerUseItem.Name
+	8,  // 70: batterystats.BatteryStats.System.ScreenBrightness.name:type_name -> batterystats.BatteryStats.System.ScreenBrightness.Name
+	9,  // 71: batterystats.BatteryStats.System.SignalStrength.name:type_name -> batterystats.BatteryStats.System.SignalStrength.Name
+	10, // 72: batterystats.BatteryStats.System.WifiSignalStrength.name:type_name -> batterystats.BatteryStats.System.WifiSignalStrength.Name
+	11, // 73: batterystats.BatteryStats.System.WifiSupplicantState.name:type_name -> batterystats.BatteryStats.System.WifiSupplicantState.Name
+	12, // 74: batterystats.BatteryStats.System.WifiState.name:type_name -> batterystats.BatteryStats.System.WifiState.Name
+	75, // [75:75] is the sub-list for method output_type
+	75, // [75:75] is the sub-list for method input_type
+	75, // [75:75] is the sub-list for extension type_name
+	75, // [75:75] is the sub-list for extension extendee
+	0,  // [0:75] is the sub-list for field type_name
 }
 
 func init() { file_pb_batterystats_proto_batterystats_proto_init() }
@@ -6500,7 +6667,7 @@ func file_pb_batterystats_proto_batterystats_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_pb_batterystats_proto_batterystats_proto_rawDesc), len(file_pb_batterystats_proto_batterystats_proto_rawDesc)),
 			NumEnums:      13,
-			NumMessages:   53,
+			NumMessages:   55,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

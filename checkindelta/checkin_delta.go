@@ -21,7 +21,6 @@ import (
 	"log"
 	"reflect"
 	"strconv"
-	"strings"
 
 	"github.com/google/battery-historian/checkinparse"
 	"github.com/google/battery-historian/packageutils"
@@ -554,19 +553,26 @@ func genericListOrDie(v interface{}) reflect.Value {
 
 // name returns the identifer of a struct value as a string.
 // Caller of this function should only pass in a struct value whose
-// first field is its identifier.
+// first proto field is its identifier.
 func name(v reflect.Value) string {
-	n := v.Elem().Field(0).Elem()
-	switch n.Kind() {
-	case reflect.String:
-		return n.String()
-	case reflect.Int32:
-		id := int(n.Int())
-		return strconv.Itoa(id)
-	default:
-		log.Fatalf("cannot extract name from %s\n", n.Kind().String())
-		return ""
+	s := v.Elem()
+	for i := 0; i < s.NumField(); i++ {
+		// Generated proto structs start with internal non-pointer state
+		// fields; real proto2 fields are pointers.
+		if s.Field(i).Kind() != reflect.Ptr {
+			continue
+		}
+		n := s.Field(i).Elem()
+		switch n.Kind() {
+		case reflect.String:
+			return n.String()
+		case reflect.Int32:
+			id := int(n.Int())
+			return strconv.Itoa(id)
+		}
 	}
+	log.Fatalf("cannot extract identifier from %s\n", s.Type())
+	return ""
 }
 
 // subtractRepeatedMessage subtracts protos in list2 from the corresponding protos in list1.
@@ -698,15 +704,18 @@ func subtractValue(out, in1, in2 reflect.Value, section string, id bool) (bool, 
 }
 
 // subtractStruct traverses a struct value and subtract each field
-func subtractStruct(out, in1, in2 reflect.Value, ids map[int]bool) bool {
+func subtractStruct(out, in1, in2 reflect.Value, ids map[string]bool) bool {
 	if in1.NumField() != in2.NumField() {
 		log.Fatalf("Tried to subtract two different struct types: %v vs %v", reflect.TypeOf(in1), reflect.TypeOf(in2))
 	}
 
 	changed := false
 	for i := 0; i < in1.NumField(); i++ {
-		if f := in1.Type().Field(i); strings.HasPrefix(f.Name, "XXX_") || f.PkgPath != "" {
-			continue // skip XXX_ and unexported fields
+		if f := in1.Type().Field(i); f.PkgPath != "" || f.Type.Kind() != reflect.Ptr {
+			// Skip unexported fields and the generated proto internal state
+			// fields (state, sizeCache, unknownFields); every real proto2
+			// field is a pointer.
+			continue
 		}
 		// pointer to field i
 		fieldPtrV1, fieldPtrV2 := in1.Field(i), in2.Field(i)
@@ -718,12 +727,12 @@ func subtractStruct(out, in1, in2 reflect.Value, ids map[int]bool) bool {
 		delta, isID := false, false
 		if fieldPtrV1.IsNil() {
 			// compare field value with zero value
-			delta, isID = subtractValue(diffV.Elem(), reflect.Zero(fieldPtrV2.Elem().Type()), fieldPtrV2.Elem(), in2.String(), ids[i])
+			delta, isID = subtractValue(diffV.Elem(), reflect.Zero(fieldPtrV2.Elem().Type()), fieldPtrV2.Elem(), in2.String(), ids[in1.Type().Field(i).Name])
 		} else if fieldPtrV2.IsNil() {
 			// compare field value with zero value
-			delta, isID = subtractValue(diffV.Elem(), fieldPtrV1.Elem(), reflect.Zero(fieldPtrV1.Elem().Type()), in1.String(), ids[i])
+			delta, isID = subtractValue(diffV.Elem(), fieldPtrV1.Elem(), reflect.Zero(fieldPtrV1.Elem().Type()), in1.String(), ids[in1.Type().Field(i).Name])
 		} else {
-			delta, isID = subtractValue(diffV.Elem(), fieldPtrV1.Elem(), fieldPtrV2.Elem(), in1.String(), ids[i])
+			delta, isID = subtractValue(diffV.Elem(), fieldPtrV1.Elem(), fieldPtrV2.Elem(), in1.String(), ids[in1.Type().Field(i).Name])
 		}
 		if delta || isID {
 			// only save the field in proto if there is a change or value serves as identifier
@@ -748,10 +757,6 @@ func subtractMessage(p1, p2 proto.Message) proto.Message {
 		// Just....just don't.
 		log.Fatalf("mismatched types: %v vs %v", r1, r2)
 	}
-	r := r1
-	if p1 == nil {
-		r = r2
-	}
 	in1 := reflect.ValueOf(p1)
 	in2 := reflect.ValueOf(p2)
 	if !in1.IsValid() || in1.IsNil() {
@@ -766,7 +771,15 @@ func subtractMessage(p1, p2 proto.Message) proto.Message {
 	}
 	out := reflect.New(in1.Type().Elem())
 	// ID fields should not be diffed.
-	changed := subtractStruct(out.Elem(), in1.Elem(), in2.Elem(), checkinparse.BatteryStatsIDMap[r])
+	// ID fields should not be diffed. Look them up from whichever message is
+	// non-nil, keyed by proto field name.
+	var ids map[string]bool
+	if p1 != nil {
+		ids = checkinparse.IDFieldNames(p1)
+	} else {
+		ids = checkinparse.IDFieldNames(p2)
+	}
+	changed := subtractStruct(out.Elem(), in1.Elem(), in2.Elem(), ids)
 	if !changed {
 		return nil
 	}

@@ -810,6 +810,12 @@ func (pd *ParsedData) parseBugReport(fnameA, contentsA, fnameB, contentsB string
 				ce = "Exception found in battery dump."
 				errs = append(errs, errors.New("exception found in battery dump"))
 			}
+			if bsL == "" {
+				// Without the checkin section there is no aggregated data or
+				// battery history timeline; say so rather than degrading
+				// silently.
+				warnings = append(warnings, "No CHECKIN BATTERYSTATS section found in the bug report: aggregated stats and the battery history timeline will be empty. The device may not have included it (some vendor builds omit it), or the section format is unrecognized.")
+			}
 
 			pkgsL, pkgErrs := packageutils.ExtractAppsFromBugReport(late.contents)
 			errs = append(errs, pkgErrs...)

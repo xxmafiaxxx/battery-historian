@@ -224,6 +224,14 @@ message BatteryStats {
     };
     optional Foreground foreground = 5; // fg.
 
+    message ForegroundService {
+      // Duration spent running a foreground service.
+      optional float total_time_msec = 1;
+      // #times.
+      optional float count = 2;
+    };
+    optional ForegroundService foreground_service = 31; // fgs (BatteryStats checkin v22+).
+
     // The modem controller doesn't provide a mechanism for determining when an
     // app has the modem active but is not transmitting data, so there's no way
     // to idle modem time to a specific UID, hence, idle time will always be 0
@@ -952,9 +960,23 @@ message BatteryStats {
     };
     repeated WifiState wifi_state = 15; // wst & wsc.
 
-    // Next tag: 27
+    // Resource Power Manager (RPM) stats: sleep blockers reported by the RPM
+    // hardware. (rpm, BatteryStats checkin v22+.)
+    message ResourcePowerManager {
+      // Name of the RPM state or voter.
+      optional string name = 1;
+      // Total time and count, screen on and off combined.
+      optional float total_time_msec = 2;
+      optional float total_count = 3;
+      // Time and count accumulated while the screen was off.
+      optional float screen_off_time_msec = 4;
+      optional float screen_off_count = 5;
+    };
+    repeated ResourcePowerManager resource_power_manager = 27; // rpm.
+
+    // Next tag: 28
   };
   optional System system = 27; // System-level stats.
 
-  // Next tag: 32
+  // Next tag: 33
 };
