@@ -153,6 +153,10 @@ func (s *rootServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		analyzer.LiveBatteryHandler(w, r)
 		return
 	}
+	if r.URL.Path == "/api/adb/live-report" && r.Method == "GET" {
+		analyzer.LiveReportHandler(w, r)
+		return
+	}
 	if r.URL.Path == "/api/adb/last-report" && r.Method == "GET" {
 		analyzer.AdbLastReportHandler(w, r)
 		return

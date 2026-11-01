@@ -4,6 +4,7 @@ import { listAdbDevices, pullBugreportFallback } from '../api/client';
 import type { AdbDevice } from '../api/types';
 import { click } from '../sound';
 import { LivePanel } from './LivePanel';
+import { LiveFullPanel } from './LiveFullPanel';
 
 interface Props {
   onSubmit: (input: {
@@ -32,6 +33,7 @@ export function UploadView({ onSubmit, onPull, onFallbackPull, busy, error }: Pr
   const [fallbackBusy, setFallbackBusy] = useState(false);
   const [selectedSerial, setSelectedSerial] = useState('');
   const [showLive, setShowLive] = useState(false);
+  const [showLiveReport, setShowLiveReport] = useState(false);
   const bugreportRef = useRef<HTMLInputElement>(null);
   const bugreport2Ref = useRef<HTMLInputElement>(null);
   const kernelRef = useRef<HTMLInputElement>(null);
@@ -184,6 +186,17 @@ export function UploadView({ onSubmit, onPull, onFallbackPull, busy, error }: Pr
               {showLive ? '▾ Hide live chart' : '▶ Show live chart'}
             </button>
           </div>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 8 }}>
+            <button type="button" className={`btn ${showLiveReport ? 'btn-primary' : ''}`} onClick={() => { click(); setShowLiveReport(v => !v); }}>
+              {showLiveReport ? '▾ Hide live Historian' : '▶ Live Historian — full report (System/App + Timeline)'}
+            </button>
+            <span className="hint" style={{ alignSelf: 'center' }}>Polls <code>dumpsys batterystats --checkin</code> every 12s — same System/App stats as a bugreport, live.</span>
+          </div>
+          {showLiveReport && selectedSerial && (
+            <div style={{ marginTop: 12 }}>
+              <LiveFullPanel serial={selectedSerial} timeZone={Intl.DateTimeFormat().resolvedOptions().timeZone ?? 'UTC'} />
+            </div>
+          )}
           {showLive && selectedSerial && (
             <div style={{ marginTop: 12 }}>
               <LivePanel serial={selectedSerial} timeZone={Intl.DateTimeFormat().resolvedOptions().timeZone ?? 'UTC'} />

@@ -17,8 +17,8 @@ import { useCollapsible } from './Collapsible';
 import { formatMah } from '../data/time';
 import { TAB_CONFIGS, getTabExtent, type HistorianTabId } from '../data/historianTabs';
 
-export function AnalysisView({ data }: { data: UploadResponse }) {
-  const tz = data.location || 'UTC';
+export function AnalysisView({ data, timeZoneOverride }: { data: UploadResponse; timeZoneOverride?: string }) {
+  const tz = timeZoneOverride ?? data.location ?? 'UTC';
 
   // Go nil slices marshal as null; never assume arrays from the wire.
   const appStats = data.appStats ?? [];

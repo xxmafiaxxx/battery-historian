@@ -25,6 +25,21 @@ export async function pollLiveBattery(serial: string): Promise<LiveReading> {
   return (await res.json()) as LiveReading;
 }
 
+/** Heavy live poll — full batterystats/report just like a bugreport, refreshed live. */
+export async function pollLiveReport(serial: string): Promise<{ single: UploadResponse } | { compare: UploadResponseCompare }> {
+  const res = await fetch(`/api/adb/live-report?serial=${encodeURIComponent(serial)}`);
+  if (!res.ok) throw new Error(await res.text());
+  const body: unknown = await res.json();
+  if (isCompare(body)) {
+    if (body.UploadResponse.length === 1) {
+      const single = body.UploadResponse[0];
+      if (single) return { single };
+    }
+    return { compare: body };
+  }
+  return { single: body as UploadResponse };
+}
+
 /**
  * Lightweight fallback when `adb bugreport`'s dumpstatez service is down.
  * Collects `dumpsys batterystats --checkin` etc directly and analyzes that

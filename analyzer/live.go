@@ -122,3 +122,88 @@ func LiveBatteryHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Cache-Control", "no-store")
 	json.NewEncoder(w).Encode(reading)
 }
+
+// LiveReportHandler is the heavy live poll — same data as a bugreport but
+// assembled live from `dumpsys batterystats --checkin` + battery + getprop
+// and fed through the full AnalyzeAndResponse pipeline. Frontend polls this
+// every 10-15s for a truly live Historian view (System/App stats + timeline).
+func LiveReportHandler(w http.ResponseWriter, r *http.Request) {
+	serial := r.URL.Query().Get("serial")
+	if serial == "" {
+		http.Error(w, "missing ?serial= parameter", http.StatusBadRequest)
+		return
+	}
+	if !serialRE.MatchString(serial) {
+		http.Error(w, fmt.Sprintf("invalid serial %q", serial), http.StatusBadRequest)
+		return
+	}
+	getpropOut, _ := runAdb(r, 8*time.Second, "-s", serial, "shell", "getprop")
+	checkinOut, err := runAdb(r, 25*time.Second, "-s", serial, "shell", "dumpsys", "batterystats", "--checkin")
+	if err != nil || strings.TrimSpace(checkinOut) == "" {
+		http.Error(w, fmt.Sprintf("live report failed — dumpsys batterystats --checkin empty on %q: %v", serial, err), http.StatusBadGateway)
+		return
+	}
+	batteryDump, _ := runAdb(r, 8*time.Second, "-s", serial, "shell", "dumpsys", "battery")
+	batterystatsDump, _ := runAdb(r, 25*time.Second, "-s", serial, "shell", "dumpsys", "batterystats")
+
+	sdk := "34"
+	if m := regexp.MustCompile(`\[ro\.build\.version\.sdk\]:\s*\[(\d+)\]`).FindStringSubmatch(getpropOut); len(m) == 2 {
+		sdk = m[1]
+	}
+	model := "unknown device"
+	if m := regexp.MustCompile(`\[ro\.product\.model\]:\s*\[(.+?)\]`).FindStringSubmatch(getpropOut); len(m) == 2 {
+		model = m[1]
+	}
+	fp := fmt.Sprintf("live/%s:user/release-keys", serial)
+	if m := regexp.MustCompile(`\[ro\.build\.fingerprint\]:\s*\[(.+?)\]`).FindStringSubmatch(getpropOut); len(m) == 2 {
+		fp = m[1]
+	}
+	tz := "UTC"
+	if m := regexp.MustCompile(`\[persist\.sys\.timezone\]:\s*\[(.+?)\]`).FindStringSubmatch(getpropOut); len(m) == 2 {
+		tz = m[1]
+	}
+	now := time.Now().Format("2006-01-02 15:04:05")
+	var b strings.Builder
+	b.WriteString(fmt.Sprintf("== dumpstate: %s\n", now))
+	b.WriteString(fmt.Sprintf("Build fingerprint: '%s'\n", fp))
+	b.WriteString(fmt.Sprintf("[ro.build.version.sdk]: [%s]\n", sdk))
+	b.WriteString(fmt.Sprintf("[ro.product.model]: [%s]\n", model))
+	b.WriteString("DeviceID: 0\n")
+	b.WriteString(fmt.Sprintf("[persist.sys.timezone]: [%s]\n", tz))
+	if getpropOut != "" {
+		b.WriteString("\n------ SYSTEM PROPERTIES ------\n")
+		b.WriteString(getpropOut)
+		if !strings.HasSuffix(getpropOut, "\n") {
+			b.WriteString("\n")
+		}
+	}
+	b.WriteString("\n------ CHECKIN BATTERYSTATS ------\n")
+	b.WriteString(checkinOut)
+	if !strings.HasSuffix(checkinOut, "\n") {
+		b.WriteString("\n")
+	}
+	b.WriteString("\n------ DUMP OF SERVICE batterystats ------\n")
+	if batterystatsDump != "" {
+		b.WriteString(batterystatsDump)
+		if !strings.HasSuffix(batterystatsDump, "\n") {
+			b.WriteString("\n")
+		}
+	} else {
+		b.WriteString(checkinOut)
+		b.WriteString("\n")
+	}
+	if batteryDump != "" {
+		b.WriteString("\n------ DUMP OF SERVICE battery ------\n")
+		b.WriteString(batteryDump)
+		if !strings.HasSuffix(batteryDump, "\n") {
+			b.WriteString("\n")
+		}
+	}
+	synth := b.String()
+	name := fmt.Sprintf("live-%s-%s.txt", serial, time.Now().Format("20060102-150405"))
+	storeLastReport(name, []byte(synth))
+	files := map[string]UploadedFile{
+		bugreportFT: {FileType: bugreportFT, FileName: name, Contents: []byte(synth)},
+	}
+	AnalyzeAndResponse(w, r, files)
+}
